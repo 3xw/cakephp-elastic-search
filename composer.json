@@ -1,0 +1,24 @@
+{
+  "name": "3xw/cakephp-pages",
+  "description": "CakePHP pages plugins",
+  "type": "cakephp-plugin",
+  "require": {
+    "php": ">=5.5.9",
+    "cakephp/cakephp": "^3.5",
+    "elastic-search": "^1.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Trois\\ElasticSearch\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Trois\\ElasticSearch\\Test\\": "tests",
+      "Cake\\Test\\": "./vendor/cakephp/cakephp/tests"
+    }
+  }
+}
