@@ -19,16 +19,21 @@ class ElasticeSearchConnectTask extends Shell
 
     return $parser;
   }
-  /*
+
   public function initialize()
   {
     parent::initialize();
     $this->connections = ConnectionManager::configured();
-    debug($this->params);
-    if(empty($this->params['connection'])) $this->setConnection();
-    else $this->testConnection();
   }
-  */
+
+  public function startup()
+  {
+    if(empty($this->params['connection'])) $this->setConnection();
+    else {
+      $this->connection = $this->params['connection'];
+      $this->testConnection();
+    }
+  }
 
   public function setConnection()
   {
