@@ -1,5 +1,5 @@
 {
-  "name": "3xw/cakephp-pages",
+  "name": "3xw/cakephp-elastic-search",
   "description": "CakePHP pages plugins",
   "type": "cakephp-plugin",
   "require": {
