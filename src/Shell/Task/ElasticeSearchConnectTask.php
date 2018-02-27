@@ -29,26 +29,24 @@ class ElasticeSearchConnectTask extends Shell
   public function startup()
   {
     if(empty($this->params['connection'])) $this->setConnection();
-    else {
-      $this->connection = $this->params['connection'];
-      $this->testConnection();
-    }
+    else $this->testConnection();
   }
 
   public function setConnection()
   {
-    $this->connection = $this->in('Which elastic connection?', $this->connections, null);
+    $this->params['connection'] = $this->in('Which elastic connection?', $this->connections, null);
     $this->testConnection();
   }
 
   public function testConnection()
   {
-    if(array_search($this->connection, $this->connections) === false)
+    if(array_search($this->params['connection'], $this->connections) === false)
     {
       $this->err('This connection does not exists!');
       $this->setConnection();
     }else{
-      if(empty($this->connection->config['driver']) || $this->connection->config['driver'] != 'Cake\ElasticSearch\Datasource\Connection')
+      $this->connection = ConnectionManager::get($this->params['connection']);
+      if(empty($this->connection->config()['driver']) || $this->connection->config()['driver'] != 'Cake\ElasticSearch\Datasource\Connection')
       {
         $this->err('This connection is not an Elastic Search one!');
         $this->info('Please choose an other one:');
