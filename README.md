@@ -13,6 +13,49 @@ Load it in your config/boostrap.php
 
 	Plugin::load('Trois/ElasticSearch');
 
+## Setup
+in app.php add at least one connection:
+
+	'Datasources' => [
+	    'elastic' => [
+	      'className' => 'Cake\ElasticSearch\Datasource\Connection',
+	      'driver' => 'Cake\ElasticSearch\Datasource\Connection',
+	      'host' => 'localhost',
+	      'port' => 6379,
+	    ],
+		...
+	]
+
+## Mapping
+The shell will ask you a mapping template.
+Follow offical doc [native elasticsearch mapping format](https://www.elastic.co/guide/en/elasticsearch/reference/1.5/mapping.html) to create your own index mapping or use default one which the prompt proposes you: vendor/3xw/cakephp-elastic-search/templates/mapping.json
+
+	{
+	  "mappings": {
+	    "items": {
+	      "properties": {
+	
+	        "locale": { "type": "string", "index": "not_analyzed"},
+	        "model": { "type": "string", "index": "not_analyzed"},
+	        "foreign_key": { "type": "string", "index": "not_analyzed" },
+	
+	        "title": { "type": "string"},
+	        "slug": { "type": "string"},
+	        "content": { "type": "string"}
+	      }
+	    }
+	  }
+	}
+
+Optionally you can add 'settings', 'aliases' and 'warmers' keys and objects to cutomize your indexes. The shell will forfill settings for you with [-r 1] and [-s 5] params as follow:
+
+	"settings" : {
+	    "index" : {
+		    "number_of_shards" : 5,
+		    "number_of_replicas" : 1
+	    }
+    }
+
 ## Shell
 Create indexes
 
