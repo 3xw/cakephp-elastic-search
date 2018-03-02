@@ -69,7 +69,7 @@ class CreateTask extends ElasticeSearchConnectTask
         'index' => [
           'number_of_shards' => $this->params['shards'],
           'number_of_replicas' => $this->params['replicas']
-          ]
+        ]
       ];
     }
 
@@ -78,10 +78,21 @@ class CreateTask extends ElasticeSearchConnectTask
 
   public function createIndex($index, $validJsonString)
   {
-    $http = new Client();
-    $url = ($this->connection->config()['port'])? 'https://': 'http://';
+    $url = ($this->connection->config()['port'] == 443)? 'https://': 'http://';
     $url .= $this->connection->config()['host'].'/'.$index;
-    //debug($validJsonString);
-    debug($url);
+
+    // let's go!
+    $http = new Client();
+    $response = $http->put($url,$validJsonString,['type' => 'json']);
+    if($response->code == 200){
+      $this->info('Ok index: "'.$index.'" created!');
+      $response = $http->get($url);
+      debug(json_decode($response->body(),true));
+    }else{
+      $this->err('Warning error for index: "'.$index.'".');
+      debug(json_decode($response->body(),true));
+    }
+    //$response = $http->get($url);
+    //$response = $http->delete($url);
   }
 }

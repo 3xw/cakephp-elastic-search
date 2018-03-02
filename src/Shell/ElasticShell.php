@@ -5,18 +5,22 @@ use Cake\Console\Shell;
 
 class ElasticShell extends Shell
 {
-  public $tasks = ['Trois/ElasticSearch.Delete','Trois/ElasticSearch.Create'];
+  public $tasks = ['Trois/ElasticSearch.Delete','Trois/ElasticSearch.Create','Trois/ElasticSearch.Info'];
 
   public function getOptionParser()
   {
     $parser = parent::getOptionParser()
     ->addSubcommand('delete', [
-      'help' => 'Execute The News Task.',
+      'help' => 'Execute delete index Task.',
       'parser' => $this->Delete->getOptionParser(),
     ])
     ->addSubcommand('create', [
-      'help' => 'Execute The News Task.',
+      'help' => 'Execute create index w/ mapping file Task.',
       'parser' => $this->Create->getOptionParser(),
+    ])
+    ->addSubcommand('info', [
+      'help' => 'Execute info on index Task.',
+      'parser' => $this->Info->getOptionParser(),
     ]);
 
     return $parser;

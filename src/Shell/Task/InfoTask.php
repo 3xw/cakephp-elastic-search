@@ -4,7 +4,7 @@ namespace Trois\ElasticSearch\Shell\Task;
 use Cake\Utility\Inflector;
 use Cake\Network\Http\Client;
 
-class DeleteTask extends ElasticeSearchConnectTask
+class InfoTask extends ElasticeSearchConnectTask
 {
 
   public $client = null;
@@ -15,7 +15,7 @@ class DeleteTask extends ElasticeSearchConnectTask
     if($index == null)
     {
       $proposal = Inflector::slug(substr(ROOT, strrpos(ROOT, '/')),'_');
-      $index = $this->in('Index name to delete ?',[$proposal,'dev_'.$proposal],'dev_'.$proposal);
+      $index = $this->in('Index name ?',[$proposal,'dev_'.$proposal],'dev_'.$proposal);
     }
     $index = Inflector::slug($index,'_');
 
@@ -31,28 +31,11 @@ class DeleteTask extends ElasticeSearchConnectTask
     $response = $this->client->get($url);
     if($response->code == 200)
     {
-      $this->goDelete($index);
+      $this->info('Ok index: "'.$index.'"');
+      debug(json_decode($response->body(),true));
     }else
     {
       $this->err('error with index:"'.$index.'"');
-      debug(json_decode($response->body(),true));
-    }
-  }
-
-  public function goDelete($index)
-  {
-    $url = ($this->connection->config()['port'] == 443)? 'https://': 'http://';
-    $url .= $this->connection->config()['host'].'/'.$index;
-
-    $sure = $this->in('Are you sur you want to delete existing index: '.$index,['yes','no'],'yes');
-    if($sure != 'yes') return $this->main();
-
-    // delete
-    $response = $this->client->delete($url);
-    if($response->code == 200){
-      $this->info('Ok index: "'.$index.'" deleted!');
-    }else{
-      $this->err('Warning error for delete index: "'.$index.'".');
       debug(json_decode($response->body(),true));
     }
   }
