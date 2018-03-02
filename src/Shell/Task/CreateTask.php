@@ -22,7 +22,6 @@ class CreateTask extends ElasticeSearchConnectTask
 
   public function main($index = null, $mappingFile = null)
   {
-    debug($this->connection);
     // set index
     if($index == null)
     {
@@ -79,6 +78,10 @@ class CreateTask extends ElasticeSearchConnectTask
 
   public function createIndex($index, $validJsonString)
   {
-    debug($validJsonString);
+    $http = new Client();
+    $url = ($this->connection->config()['port'])? 'https://': 'http://';
+    $url .= $this->connection->config()['host'].'/'.$index;
+    //debug($validJsonString);
+    debug($url);
   }
 }
