@@ -5,4 +5,7 @@ use Cake\ElasticSearch\Type;
 
 class ItemsType extends Type
 {
+  public static function defaultConnectionName() {
+    return 'elastic';
+  }
 }
