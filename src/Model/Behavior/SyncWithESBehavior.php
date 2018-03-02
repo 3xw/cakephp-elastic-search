@@ -22,5 +22,6 @@ class SyncWithESBehavior extends Behavior
   public function initialize(array $config)
   {
     parent::initialize($config);
+    $this->
   }
 }
