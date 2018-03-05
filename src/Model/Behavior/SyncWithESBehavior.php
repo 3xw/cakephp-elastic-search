@@ -6,6 +6,7 @@ use Cake\ORM\Table;
 use Cake\Event\Event;
 use Cake\ElasticSearch\TypeRegistry;
 use Cake\Datasource\EntityInterface;
+use Cake\Core\Configure;
 
 class SyncWithESBehavior extends Behavior
 {
@@ -22,58 +23,49 @@ class SyncWithESBehavior extends Behavior
 
   protected $_Type = null;
 
-  protected $_item = null;
+  protected $_items = [];
 
-  public function initialize(array $config)
-  {
-    parent::initialize($config);
-  }
-
-  protected function getType()
+  public function getType()
   {
     if($this->Type == null) $this->Type = TypeRegistry::get($this->_config['type']);
     return $this->Type;
   }
 
+  public function retriveData($entity, $locale = null)
+  {
+    $data = ['locale' => $locale,'model' => $this->_table->getAlias()];
+    switch($locale){
+      case null: return $data + $this->_retriveData($entity);
+      case Configure::read('App.defaultLocale'): return $data + $this->_retriveData($entity);
+      default return $data + $this->_retriveData($entity->_transaltion[$locale]);
+    }
+  }
+
+  protected function _retriveData($entity)
+  {
+    $data = [];
+    foreach($this->_config['mapping '] as $prop => $fields ){
+      if(!is_array($fields)) $data[$prop] = strip_tags($entiy->get($fields));
+      else foreach($fields as $field) $data[$prop] = (empty($data[$prop]))? strip_tags($entiy->get($field)): $data[$prop] .strip_tags($entiy->get($field));
+    }
+  }
+
+  public function setEsEntity($entity, $locale = null)
+  {
+    if($entity->isNew()) return $this->getType()->patchEntity($this->getType()->newEntity(), $this->retriveData($entity, $locale));
+    $where = ['foreign_key' => $entity[$this->_config['mapping']['foreign_key']],'model' => $this->_table->getAlias()];
+    if($this->_config['translate']) $where['locale'] => $locale;
+    return $this->getType()->patchEntity($this->getType()->find()->where($where)->first(), $this->retriveData($entity, $locale));
+  }
+
   public function beforeSave(Event $event, EntityInterface $entity, \ArrayObject $options)
   {
-    $this->_item = $this->getType()->newEntity();
-    if(!$entity->isNew())
-    {
-      $query = $this->getType()->find()
-      ->where(['foreign_key' => $entity[$this->_config['mapping']['foreign_key ']]]);
-
-      if($this->_config['translate']){
-        //??????
-        // deux objet en fait ... $this->itemSS ???
-      }
-
-      $item = $query->first();
-      if(!empty($item)) $this->_item = $item;
-    }
-
-    $data = [
-      'locale' => 'fr_CH'
-    ];
-    foreach($this->_config['mapping '] as $prop => $fields )
-    {
-      if(!is_array($fields))
-      {
-        $data[$prop] = strip_tags($entiy->get($fields));
-      }else{
-        $value = '';
-        foreach($fields as $field){
-          $value .= strip_tags($entiy->get($field));
-        }
-        $data[$prop] = $value;
-      }
-    }
-
-    $this->_item = $this->getType()->patchEntity($this->_item, $data);
+    if($this->_config['translate']) foreach(Configure::read('I18n.languages') as $locale) $this->items[] = $this->setEsEntity($entity, $locale);
+    else $this->items[] = $this->setEsEntity($entity);
   }
 
   public function afterSave(Event $event, EntityInterface $entity, \ArrayObject $options)
   {
-    $this->getType()->save($this->_item);
+    foreach($this->_items as $item) $this->getType()->save($this->getType()->patchEntity($item, ['foreign_key' => $entity[$this->_config['mapping']['foreign_key']]]));
   }
 }
