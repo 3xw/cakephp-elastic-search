@@ -71,9 +71,16 @@ class SyncWithESBehavior extends Behavior
 
   public function setEsEntity($entity, $locale = null)
   {
-    if($entity->isNew()) return $this->getType()->patchEntity($this->getType()->newEntity(), $this->retriveData($entity, $locale));
+    if($entity->isNew()) return $this->getNewOne($entity, $locale);
     $where = ['foreign_key' => $entity[$this->_config['mapping']['foreign_key']],'model' => $this->_table->getAlias()];
     if($this->_config['translate']) $where['locale'] => $locale;
-    return $this->getType()->patchEntity($this->getType()->find()->where($where)->first(), $this->retriveData($entity, $locale));
+    $item = $this->getType()->patchEntity($this->getType()->find()->where($where)->first(), $this->retriveData($entity, $locale));
+    if(empty($item)) $item = $this->getNewOne($entity, $locale);
+    return $item;
+  }
+
+  public function getNewOne($entity, $locale = null)
+  {
+    return $this->getType()->patchEntity($this->getType()->newEntity(), $this->retriveData($entity, $locale));
   }
 }
