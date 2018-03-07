@@ -7,6 +7,8 @@ use Cake\Network\Http\Client;
 
 class CreateTask extends ElasticeSearchConnectTask
 {
+  public $client = null;
+
   public function getOptionParser()
   {
     $parser = parent::getOptionParser()
