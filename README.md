@@ -95,8 +95,6 @@ Get index info
 	--quiet, -q       Enable quiet output.
 	--verbose, -v     Enable verbose output.
 	
-	3xwantoine-3:cinebulletin.ch antoine$ 
-	
 Delete index
 
 	bin/cake elastic delete [indexName]
@@ -114,7 +112,19 @@ Delete index
 	--quiet, -q       Enable quiet output.
 	--verbose, -v     Enable verbose output.
 	
-	3xwantoine-3:cinebulletin.ch antoine$ 
+Import entire table
+
+	bin/cake elastic import
+	------
+	Execute info on index Task.
+
+	Usage:
+	cake trois/elastic_search.elastic import [-c] [-h] [-q] [-v]
 	
+	Options:
 	
+	--connection, -c  The Elestic Search connection to use
+	--help, -h        Display this help.
+	--quiet, -q       Enable quiet output.
+	--verbose, -v     Enable verbose output.
 	
