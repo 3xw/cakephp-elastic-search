@@ -48,7 +48,7 @@ class ElasticeSearchConnectTask extends Shell
       $this->connection = ConnectionManager::get($this->params['connection']);
       if(empty($this->connection->config()['driver']) || $this->connection->config()['driver'] != 'Cake\ElasticSearch\Datasource\Connection')
       {
-        $this->err('This connection is not an Elastic Search one!');
+        $this->err('This connection is not an Elastic Search Datasource!');
         $this->info('Please choose an other one:');
         $this->setConnection();
       }
