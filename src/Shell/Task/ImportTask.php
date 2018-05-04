@@ -208,17 +208,13 @@ class importTask extends ElasticeSearchConnectTask
     // $reducer
     $reducer = function($entities, $id, $mapReduce){ foreach($entities as $entity) $mapReduce->emit($entity, null); };
 
-    $items = $this->table->find($finder)
-    ->mapReduce($mapper, $reducer)
-    ->page(1)
-    ->limit(4)
-    ->toArray();
+    $items = $this->table->find($finder)->mapReduce($mapper, $reducer)->page(1)->limit(4)->toArray();
 
-    debug($items);
+    $this->save($items);
   }
 
-  public function save()
+  public function save($items)
   {
-
+    $this->type->saveMany($this->type->newEntities($items));
   }
 }
