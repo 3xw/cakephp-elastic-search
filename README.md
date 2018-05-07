@@ -114,9 +114,9 @@ Delete index
 	
 Import entire table
 
-	bin/cake elastic import
+	bin/cake elastic import [indexName] [tableName]
 	------
-	Execute info on index Task.
+	Execute import on index with table.
 
 	Usage:
 	cake trois/elastic_search.elastic import [-c] [-h] [-q] [-v]

@@ -142,10 +142,6 @@ class importTask extends ElasticeSearchConnectTask
 
   public function import()
   {
-    $finder = $this->table->hasBehavior('Translate')? 'translations': 'all';
-    $total = $this->table->find($finder)->count();
-    $chunkSize = 50; $count = 0;
-
     // $mapper
     $properties = $this->properties;
     $defaultLocale = Configure::read('App.defaultLocale');
@@ -208,13 +204,44 @@ class importTask extends ElasticeSearchConnectTask
     // $reducer
     $reducer = function($entities, $id, $mapReduce){ foreach($entities as $entity) $mapReduce->emit($entity, null); };
 
-    $items = $this->table->find($finder)->mapReduce($mapper, $reducer)->page(1)->limit(4)->toArray();
+    // retrive and save them all
+    $finder = $this->table->hasBehavior('Translate')? 'translations': 'all';
+    $total = $this->table->find($finder)->count();
+    $chunkSize = 50; $count = 0; $page = 1;
 
-    $this->save($items);
+    // loop
+    $this->out('Found '.$total.' rows in table.');
+    $this->out('Now saving:');
+    $this->hr();
+    $progress = $this->helper('Progress');
+    $progress->init(['total' => $total,'width' => 0]);
+    while($count < $total)
+    {
+      $items = $this->table->find($finder)->mapReduce($mapper, $reducer)->page($page)->limit($chunkSize)->toArray();
+      if(!$items)
+      {
+        $this->error('An error occured saving items:');
+        debug($items->error());
+        break;
+      }
+      $this->save($items);
+      $delta = count($items);
+
+      // inc total...
+      if($delta > $chunkSize) $total += ($delta - $chunkSize);
+
+      $progress->increment($chunkSize);
+      $progress->draw();
+
+      $count += count($items);
+    }
+    $this->out(' ');
+    $this->hr();
+    $this->info($count.' records where created and saved out of '.$total.' table rows');
   }
 
   public function save($items)
   {
-    $this->type->saveMany($this->type->newEntities($items));
+    return $this->type->saveMany($this->type->newEntities($items));
   }
 }
