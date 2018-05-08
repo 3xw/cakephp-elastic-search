@@ -50,17 +50,17 @@ class SyncWithESBehavior extends Behavior
     return $this->Type;
   }
 
-  public function retriveData($entity, $locale = null)
+  public function retrieveData($entity, $locale = null)
   {
     $data = ['locale' => $locale,'model' => $this->_table->getAlias()];
     switch($locale){
-      case null: return $data + $this->_retriveData($entity);
-      case Configure::read('App.defaultLocale'): return $data + $this->_retriveData($entity);
-      default return $data + $this->_retriveData($entity->_transaltion[$locale]);
+      case null: return $data + $this->_retrieveData($entity);
+      case Configure::read('App.defaultLocale'): return $data + $this->_retrieveData($entity);
+      default return $data + $this->_retrieveData($entity->_transaltion[$locale]);
     }
   }
 
-  protected function _retriveData($entity)
+  protected function _retrieveData($entity)
   {
     $data = [];
     foreach($this->_config['mapping '] as $prop => $fields ){
@@ -74,13 +74,13 @@ class SyncWithESBehavior extends Behavior
     if($entity->isNew()) return $this->getNewOne($entity, $locale);
     $where = ['foreign_key' => $entity[$this->_config['mapping']['foreign_key']],'model' => $this->_table->getAlias()];
     if($this->_config['translate']) $where['locale'] => $locale;
-    $item = $this->getType()->patchEntity($this->getType()->find()->where($where)->first(), $this->retriveData($entity, $locale));
+    $item = $this->getType()->patchEntity($this->getType()->find()->where($where)->first(), $this->retrieveData($entity, $locale));
     if(empty($item)) $item = $this->getNewOne($entity, $locale);
     return $item;
   }
 
   public function getNewOne($entity, $locale = null)
   {
-    return $this->getType()->patchEntity($this->getType()->newEntity(), $this->retriveData($entity, $locale));
+    return $this->getType()->patchEntity($this->getType()->newEntity(), $this->retrieveData($entity, $locale));
   }
 }
