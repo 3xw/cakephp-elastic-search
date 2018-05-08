@@ -96,10 +96,11 @@ class importTask extends ElasticeSearchConnectTask
   public function createMapping()
   {
     // reset!
-    foreach($this->properties as $key => &$value) $value = null;
+    $properties = $this->properties;
+    foreach($properties as $key => &$value) $value = null;
 
     $this->info('Ok let\'s build the mapping now...');
-    foreach($this->properties as $key => &$value)
+    foreach($properties as $key => &$value)
     {
       $value = null;
       if($key == 'model') continue;
@@ -111,7 +112,7 @@ class importTask extends ElasticeSearchConnectTask
     }
 
     $count = 0;
-    foreach($this->properties as $key => &$value)
+    foreach($properties as $key => &$value)
     {
       if($key == 'model') continue;
       if($key == 'locale') continue;
@@ -126,31 +127,46 @@ class importTask extends ElasticeSearchConnectTask
 
     $this->info('Mapping for '.$this->type->alias().': ');
     $mapping = [];
-    $mapping[] = array_keys($this->properties);
+    $mapping[] = array_keys($properties);
     for($i = 0; $i < $count; $i++)
     {
       $row = [];
-      foreach($this->properties as $field => $f) $row[] = ($f == null || empty($f[$i]))? null: $f[$i];
+      foreach($properties as $field => $f) $row[] = ($f == null || empty($f[$i]))? null: $f[$i];
       $mapping[] = $row;
     }
     $this->helper('Table')->output($mapping);
 
     if($this->in('looks good?',['y', 'n'],'y') == 'n') return $this->createMapping();
 
-    $this->import();
+    $this->import($properties);
   }
 
-  public function import()
+  public function import($mapping)
   {
+
+    // caster
+    $caster = function($entity, $field, $type)
+    {
+      switch($type)
+      {
+        case 'string': return html_entity_decode(strip_tags($entity->get($field))).' ';
+        case 'integer': return (integer) $entity->get($field);
+        case 'double': return (double) $entity->get($field);
+        case 'float': return (float) $entity->get($field);
+        case 'date': return (string) $entity->get($field)->format("Y-m-d\TH:i:s.000P");
+        default: return $entity->get($field);
+      }
+    };
+
     // $mapper
     $properties = $this->properties;
     $defaultLocale = Configure::read('App.defaultLocale');
     $model = $this->table->alias();
-    $mapper = function($entity, $key, $mapReduce) use($properties, $defaultLocale, $model)
+    $mapper = function($entity, $key, $mapReduce) use($caster, $mapping, $properties, $defaultLocale, $model)
     {
       // regular item
       $item = [];
-      foreach($properties as $field => $entityFileds){
+      foreach($mapping as $field => $entityFileds){
 
         $item[$field] = '';
 
@@ -159,8 +175,8 @@ class importTask extends ElasticeSearchConnectTask
 
         if(!empty($entityFileds))
         {
-          if(!is_array($entityFileds)) $item[$field] = html_entity_decode(strip_tags($entity->get($entityFileds)));
-          else foreach($entityFileds as $entityFiled) $item[$field] .= html_entity_decode(strip_tags($entity->get($entityFiled))).' ';
+          if(!is_array($entityFileds)) $item[$field] = $caster($entity, $entityFileds, $properties[$field]['type']);
+          else foreach($entityFileds as $entityFiled) $item[$field] .= $caster($entity, $entityFiled, $properties[$field]['type']);
         }
 
       }
@@ -179,7 +195,7 @@ class importTask extends ElasticeSearchConnectTask
         foreach($locales as $locale => $localEntity)
         {
           $localeItem = $item;
-          foreach($properties as $field => $entityFileds)
+          foreach($mapping as $field => $entityFileds)
           {
             if($field == 'locale'){ $localeItem[$field] = $locale; continue; }
             if($field == 'model') continue;
@@ -187,10 +203,10 @@ class importTask extends ElasticeSearchConnectTask
             if(!empty($entityFileds))
             {
               if(!is_array($entityFileds)){
-                  if(!empty($localEntity->get($entityFileds))) $localeItem[$field] = html_entity_decode(strip_tags($localEntity->get($entityFileds)));
+                  if(!empty($localEntity->get($entityFileds))) $localeItem[$field] = $caster($localEntity, $entityFileds, $properties[$field]['type']);
               }else{
                 foreach($entityFileds as $entityFiled){
-                  if($localEntity->get($entityFiled)) $localeItem[$field] .= html_entity_decode(strip_tags($localEntity->get($entityFiled))).' ';
+                  if($localEntity->get($entityFiled)) $localeItem[$field] .=  $caster($localEntity, $entityFiled, $properties[$field]['type']);
                 }
               }
             }
@@ -217,7 +233,7 @@ class importTask extends ElasticeSearchConnectTask
     $progress->init(['total' => $total,'width' => 0]);
     while($count < $total)
     {
-      $items = $this->table->find($finder)->mapReduce($mapper, $reducer)->page($page)->limit($chunkSize)->toArray();
+      $items = $this->table->find($finder)->mapReduce($mapper, $reducer)->limit($chunkSize)->page($page)->toArray();
       if(!$items)
       {
         $this->error('An error occured saving items:');
@@ -225,15 +241,12 @@ class importTask extends ElasticeSearchConnectTask
         break;
       }
       $this->save($items);
-      $delta = count($items);
 
-      // inc total...
-      if($delta > $chunkSize) $total += ($delta - $chunkSize);
-
+      // update
+      $count += $chunkSize;
+      $page++;
       $progress->increment($chunkSize);
       $progress->draw();
-
-      $count += count($items);
     }
     $this->out(' ');
     $this->hr();
