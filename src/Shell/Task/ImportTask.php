@@ -27,7 +27,7 @@ class importTask extends ElasticeSearchConnectTask
     if($index == null)
     {
       $proposal = Inflector::slug(substr(ROOT, strrpos(ROOT, '/')),'_');
-      $index = $this->in('Index name for import ?',[$proposal,'dev_'.$proposal],'dev_'.$proposal);
+      $index = $this->in('Index name for import ?',['www_'.$proposal,'dev_'.$proposal],'dev_'.$proposal);
     }
     $index = Inflector::slug($index,'_');
 
