@@ -37,7 +37,10 @@ Follow offical doc [native elasticsearch mapping format](https://www.elastic.co/
 	
 	        "locale": { "type": "string", "index": "not_analyzed"},
 	        "model": { "type": "string", "index": "not_analyzed"},
-	        "foreign_key": { "type": "string", "index": "not_analyzed" },
+	        "foreign_key": { "type": "integer", "index": "not_analyzed"},
+	
+	        "created": { "type": "date", "format": "date_time", "index": "not_analyzed"},
+	        "modified": { "type": "date", "format": "date_time", "index": "not_analyzed"},
 	
 	        "title": { "type": "string"},
 	        "slug": { "type": "string"},
@@ -55,6 +58,27 @@ Optionally you can add 'settings', 'aliases' and 'warmers' keys and objects to c
 		    "number_of_replicas" : 1
 	    }
     }
+    
+## Behavior
+set up your behavior as you wish
+
+	$this->addBehavior('Trois/ElasticSearch.SyncWithES',[
+		'type' => 'Trois/ElasticSearch.Items', // or your own....
+		'translate' => true,
+		'mapping' => [						// follow your own ES type mapping
+			'foreign_key' => 'id',			// default here
+			'modified' => 'modified',		// optionary
+			'created' => 'created',			// optionary 
+			'title' => 'title',				// default here
+			'slug' => 'slug',				// default here
+			'content' => [					// array of custom fields to gather in one
+				'author',
+				'guest',
+				'header',
+				'body'
+			]
+		]
+    ]);
 
 ## Shell
 Create indexes

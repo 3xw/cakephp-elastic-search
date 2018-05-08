@@ -82,7 +82,7 @@ class importTask extends ElasticeSearchConnectTask
       else $this->testTable(null);
 
     }
-    $this->table = TableRegistry::get($table);
+    $this->table = TableRegistry::get(Inflector::camelize($table));
     try {
       $row = $this->table->find()->first();
     } catch (\Exception $e) {
@@ -161,7 +161,7 @@ class importTask extends ElasticeSearchConnectTask
     // $mapper
     $properties = $this->properties;
     $defaultLocale = Configure::read('App.defaultLocale');
-    $model = $this->table->alias();
+    $model = $this->table->getAlias();
     $mapper = function($entity, $key, $mapReduce) use($caster, $mapping, $properties, $defaultLocale, $model)
     {
       // regular item
