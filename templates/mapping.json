@@ -7,9 +7,6 @@
         "model": { "type": "string", "index": "not_analyzed"},
         "foreign_key": { "type": "integer", "index": "not_analyzed"},
 
-        "created": { "type": "date", "format": "date_time", "index": "not_analyzed"},
-        "modified": { "type": "date", "format": "date_time", "index": "not_analyzed"},
-
         "title": { "type": "string"},
         "slug": { "type": "string"},
         "content": { "type": "string"}
