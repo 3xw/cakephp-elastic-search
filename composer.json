@@ -5,7 +5,7 @@
   "require": {
     "php": ">=5.5.9",
     "cakephp/cakephp": "^3.5",
-    "cakephp/elastic-search": "^1.0"
+    "cakephp/elastic-search": "dev-master"
   },
   "require-dev": {
     "phpunit/phpunit": "*"
