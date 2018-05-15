@@ -45,10 +45,14 @@ class SyncWithESBehavior extends Behavior
 
   public function afterDelete(Event $event, EntityInterface $entity, \ArrayObject $options)
   {
-    $where = ['foreign_key' => $entity[$this->_config['mapping']['foreign_key']],'model' => $this->_table->getAlias()];
-    if($this->_config['translate']) $where['locale'] = $locale;
-    $item = $this->getType()->find()->where($where)->first();
-    $this->getType()->delete($item);
+    // construct Query
+    $query = $this->getType()->find()
+    ->queryMust(new Match('foreign_key', $entity->get($this->_config['mapping']['foreign_key']) ))
+    ->queryMust(new Match('model', $this->_table->getAlias() ));
+
+    // get them
+    $items = $query->toArray();
+    foreach ($items as $item) $this->getType()->delete($item);
   }
 
   public function getType()
