@@ -3,14 +3,14 @@
     "items": {
       "properties": {
 
-        "locale": { "type": "string", "index": "not_analyzed"},
-        "model": { "type": "string", "index": "not_analyzed"},
-        "foreign_key": { "type": "integer", "index": "not_analyzed"},
-        "is_published": { "type": "boolean", "index": "not_analyzed"},
+        "locale": { "type": "keyword"},
+        "model": { "type": "keyword"},
+        "foreign_key": { "type": "integer"},
+        "is_published": { "type": "boolean"},
 
-        "title": { "type": "string"},
-        "slug": { "type": "string"},
-        "content": { "type": "string"}
+        "title": { "type": "text"},
+        "slug": { "type": "text"},
+        "content": { "type": "text"}
       }
     }
   }
