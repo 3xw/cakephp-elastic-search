@@ -155,7 +155,7 @@ class importTask extends ElasticeSearchConnectTask
           $value = html_entity_decode(strip_tags($entity->get($field))).' ';
           break;
         case 'boolean':
-          if($entity->get($field) == '' || $entity->get($field) == false || $entity->get($field) == "false" || $entity->get($field) == 0 || $entity->get($field) == '0') $value = "false";
+          if(empty($entity->get($field))) $value = "false";
           else $value = "true";
           break;
         case 'integer':
@@ -173,7 +173,7 @@ class importTask extends ElasticeSearchConnectTask
         default: $value = $entity->get($field);
       }
 
-      //$this->out($field.' of type '.$type.': '.$value);
+      //$this->out($field.' of type '.$type.': '.$entity->get($field).' => '.$value);
       return $value;
     };
 
@@ -236,6 +236,7 @@ class importTask extends ElasticeSearchConnectTask
                     if($localEntity->get($entityFiled)) $localeItem[$field] =  $caster($localEntity, $entityFiled, $properties[$field]['type']);
                   }
                 }else{
+                  $localeItem[$field] = '';
                   foreach($entityFileds as $entityFiled){
                     if($localEntity->get($entityFiled)) $localeItem[$field] .=  $caster($localEntity, $entityFiled, $properties[$field]['type']);
                   }

@@ -74,7 +74,6 @@ class ESComponent extends Component
     }
     $response = json_decode($response->body(), true);
     if(!$response) throw new \Exception("Error Parsing response", 1);
-
     // reply
     return $response;
   }
