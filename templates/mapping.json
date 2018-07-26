@@ -10,7 +10,10 @@
 
         "title": { "type": "text"},
         "slug": { "type": "text"},
-        "content": { "type": "text"}
+        "content": { "type": "text"},
+
+        "created": { "type": "date"},
+        "modified": { "type": "date"}
       }
     }
   }

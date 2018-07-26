@@ -26,6 +26,14 @@ in app.php add at least one connection:
 		...
 	]
 
+## Caution
+if you use elastic search >= 6 please chage rufin/elastic package like so: (https://github.com/ruflin/Elastica/pull/1414/commits/7db40ee6980273bcae0974f4f0c2e88f2dd692a5)[check issue]
+
+	// lib/Elastica/Transport/Http.php ~line 114
+	$headers = [];
+	$headers[] = 'Accept: application/json';
+	$headers[] = 'Content-Type: application/json';
+
 ## Mapping
 The shell will ask you a mapping template.
 Follow offical doc [native elasticsearch mapping format](https://www.elastic.co/guide/en/elasticsearch/reference/1.5/mapping.html) to create your own index mapping or use default one which the prompt proposes you: vendor/3xw/cakephp-elastic-search/templates/mapping.json
@@ -34,14 +42,14 @@ Follow offical doc [native elasticsearch mapping format](https://www.elastic.co/
 	  "mappings": {
 	    "items": {
 	      "properties": {
-	
+
 	        "locale": { "type": "string", "index": "not_analyzed"},
 	        "model": { "type": "string", "index": "not_analyzed"},
 	        "foreign_key": { "type": "integer", "index": "not_analyzed"},
-	
+
 	        "created": { "type": "date", "format": "date_time", "index": "not_analyzed"},
 	        "modified": { "type": "date", "format": "date_time", "index": "not_analyzed"},
-	
+
 	        "title": { "type": "string"},
 	        "slug": { "type": "string"},
 	        "content": { "type": "string"}
@@ -58,7 +66,7 @@ Optionally you can add 'settings', 'aliases' and 'warmers' keys and objects to c
 		    "number_of_replicas" : 1
 	    }
     }
-    
+
 ## Behavior
 set up your behavior as you wish
 
@@ -68,7 +76,7 @@ set up your behavior as you wish
 		'mapping' => [						// follow your own ES type mapping
 			'foreign_key' => 'id',			// default here
 			'modified' => 'modified',		// optionary
-			'created' => 'created',			// optionary 
+			'created' => 'created',			// optionary
 			'title' => 'title',				// default here
 			'slug' => 'slug',				// default here
 			'content' => [					// array of custom fields to gather in one
@@ -84,15 +92,15 @@ set up your behavior as you wish
 Create indexes
 
 	bin/cake elastic create [indexName] [mappingFile.json]
-	
+
 	------
 	Execute create index w/ mapping file Task.
 
 	Usage:
 	cake trois/elastic_search.elastic create [-c] [-h] [-q] [-r 1] [-s 5] [-v]
-	
+
 	Options:
-	
+
 	--connection, -c  The Elestic Search connection to use
 	--help, -h        Display this help.
 	--quiet, -q       Enable quiet output.
@@ -101,41 +109,41 @@ Create indexes
 	--shards, -s      The index number of shards. Default is 5
 	                  (default: 5)
 	--verbose, -v     Enable verbose output.
-	
+
 Get index info
 
 	bin/cake elastic info [indexName]
-	
+
 	------
 	Execute info on index Task.
 
 	Usage:
 	cake trois/elastic_search.elastic info [-c] [-h] [-q] [-v]
-	
+
 	Options:
-	
+
 	--connection, -c  The Elestic Search connection to use
 	--help, -h        Display this help.
 	--quiet, -q       Enable quiet output.
 	--verbose, -v     Enable verbose output.
-	
+
 Delete index
 
 	bin/cake elastic delete [indexName]
-	
+
 	------
 	Execute delete index Task.
 
 	Usage:
 	cake trois/elastic_search.elastic delete [-c] [-h] [-q] [-v]
-	
+
 	Options:
-	
+
 	--connection, -c  The Elestic Search connection to use
 	--help, -h        Display this help.
 	--quiet, -q       Enable quiet output.
 	--verbose, -v     Enable verbose output.
-	
+
 Import entire table
 
 	bin/cake elastic import [indexName] [tableName]
@@ -144,11 +152,10 @@ Import entire table
 
 	Usage:
 	cake trois/elastic_search.elastic import [-c] [-h] [-q] [-v]
-	
+
 	Options:
-	
+
 	--connection, -c  The Elestic Search connection to use
 	--help, -h        Display this help.
 	--quiet, -q       Enable quiet output.
 	--verbose, -v     Enable verbose output.
-	

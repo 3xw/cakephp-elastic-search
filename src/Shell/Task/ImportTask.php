@@ -147,15 +147,34 @@ class importTask extends ElasticeSearchConnectTask
     // caster
     $caster = function($entity, $field, $type)
     {
+      $value;
       switch($type)
       {
-        case 'string': return html_entity_decode(strip_tags($entity->get($field))).' ';
-        case 'integer': return (integer) $entity->get($field);
-        case 'double': return (double) $entity->get($field);
-        case 'float': return (float) $entity->get($field);
-        case 'date': return (string) $entity->get($field)->format("Y-m-d\TH:i:s.000P");
-        default: return $entity->get($field);
+        case 'keyword':
+        case 'text':
+          $value = html_entity_decode(strip_tags($entity->get($field))).' ';
+          break;
+        case 'boolean':
+          if($entity->get($field) == '' || $entity->get($field) == false || $entity->get($field) == "false" || $entity->get($field) == 0 || $entity->get($field) == '0') $value = "false";
+          else $value = "true";
+          break;
+        case 'integer':
+          $value = (int) $entity->get($field);
+          break;
+        case 'double':
+          $value = (double) $entity->get($field);
+          break;
+        case 'float':
+          $value = (float) $entity->get($field);
+          break;
+        case 'date':
+          $value = (string) $entity->get($field)->format("Y-m-d\TH:i:s.000P");
+          break;
+        default: $value = $entity->get($field);
       }
+
+      //$this->out($field.' of type '.$type.': '.$value);
+      return $value;
     };
 
     // $mapper
@@ -176,10 +195,17 @@ class importTask extends ElasticeSearchConnectTask
         if(!empty($entityFileds))
         {
           if(!is_array($entityFileds)) $item[$field] = $caster($entity, $entityFileds, $properties[$field]['type']);
-          else foreach($entityFileds as $entityFiled) $item[$field] .= $caster($entity, $entityFiled, $properties[$field]['type']);
+          else {
+            if(count($entityFileds) == 1 )
+            {
+              foreach($entityFileds as $entityFiled) $item[$field] = $caster($entity, $entityFiled, $properties[$field]['type']);
+            }
+            else foreach($entityFileds as $entityFiled) $item[$field] .= $caster($entity, $entityFiled, $properties[$field]['type']);
+          }
         }
 
       }
+      //debug($item);
       $mapReduce->emitIntermediate($item, $entity->id);
 
       //i18n
@@ -205,8 +231,14 @@ class importTask extends ElasticeSearchConnectTask
               if(!is_array($entityFileds)){
                   if(!empty($localEntity->get($entityFileds))) $localeItem[$field] = $caster($localEntity, $entityFileds, $properties[$field]['type']);
               }else{
-                foreach($entityFileds as $entityFiled){
-                  if($localEntity->get($entityFiled)) $localeItem[$field] .=  $caster($localEntity, $entityFiled, $properties[$field]['type']);
+                if(count($entityFileds) == 1){
+                  foreach($entityFileds as $entityFiled){
+                    if($localEntity->get($entityFiled)) $localeItem[$field] =  $caster($localEntity, $entityFiled, $properties[$field]['type']);
+                  }
+                }else{
+                  foreach($entityFileds as $entityFiled){
+                    if($localEntity->get($entityFiled)) $localeItem[$field] .=  $caster($localEntity, $entityFiled, $properties[$field]['type']);
+                  }
                 }
               }
             }
@@ -223,7 +255,7 @@ class importTask extends ElasticeSearchConnectTask
     // retrive and save them all
     $finder = $this->table->hasBehavior('Translate')? 'translations': 'all';
     $total = $this->table->find($finder)->count();
-    $chunkSize = 50; $count = 0; $page = 1;
+    $chunkSize = 25; $count = 0; $page = 1;
 
     // loop
     $this->out('Found '.$total.' rows in table.');
