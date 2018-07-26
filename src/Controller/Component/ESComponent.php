@@ -67,7 +67,11 @@ class ESComponent extends Component
     $response = $http->post($this->_getSearchUrl($config), $query,['type' => 'json']);
 
     // format
-    if($response->code != 200) throw new \Exception("Error Processing Request", 1);
+    if($response->code != 200)
+    {
+      debug(json_decode($response->body(), true));
+      throw new \Exception("Error Processing Request", 1);
+    }
     $response = json_decode($response->body(), true);
     if(!$response) throw new \Exception("Error Parsing response", 1);
 
