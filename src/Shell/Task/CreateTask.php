@@ -38,13 +38,16 @@ class CreateTask extends ElasticeSearchConnectTask
 
   public function getMappingFile($index, $mappingFile = null)
   {
+
     $template = ROOT.'/vendor/3xw/cakephp-elastic-search/templates/mapping.json';
-    if($mappingFile == null) $mappingFile = $this->in('Path to mapping file ?', $template, $template);
+    $mappingFile = $this->in('Path to mapping file ?', null, $template);
+
     $mappingFile = new File($mappingFile);
 
     // check file
     if(!$mappingFile->exists())
     {
+
       $this->err($mappingFile->path.' doses not exists!');
       return $this->getMappingFile($index, null);
     }
