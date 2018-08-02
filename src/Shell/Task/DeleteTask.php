@@ -15,7 +15,7 @@ class DeleteTask extends ElasticeSearchConnectTask
     if($index == null)
     {
       $proposal = Inflector::slug(substr(ROOT, strrpos(ROOT, '/')),'_');
-      $index = $this->in('Index name to delete ?',['www_'.$proposal,'dev_'.$proposal],'dev_'.$proposal);
+      $index = $this->in('Index name to delete ?', null, null);
     }
     $index = Inflector::slug($index,'_');
 
