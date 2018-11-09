@@ -2,7 +2,7 @@
 namespace Trois\ElasticSearch\Shell\Task;
 
 use Cake\Utility\Inflector;
-use Cake\ElasticSearch\TypeRegistry;
+use Cake\ElasticSearch\IndexRegistry;
 use Cake\ORM\TableRegistry;
 use Cake\Network\Http\Client;
 use Cake\Datasource\ConnectionManager;
@@ -15,58 +15,58 @@ class importTask extends ElasticeSearchConnectTask
 
   public $index = null;
 
-  public $type = null;
+  public $indexName = null;
 
   public $properties = null;
 
   public $table = null;
 
-  public function main($index = null, $table = null)
+  public function main($indexName = null, $table = null)
   {
     // set index
-    if($index == null)
+    if($indexName == null)
     {
       $proposal = Inflector::slug(substr(ROOT, strrpos(ROOT, '/')),'_');
-      $index = $this->in('Index name for import ?',['www_'.$proposal,'dev_'.$proposal],'dev_'.$proposal);
+      $indexName = $this->in('Index name for import ?');
     }
-    $index = Inflector::slug($index,'_');
+    $indexName = Inflector::slug($indexName,'_');
 
-    $this->testIndex($index, $table);
+    $this->testIndex($indexName, $table);
   }
 
-  public function testIndex($index, $table)
+  public function testIndex($indexName, $table)
   {
     $url = ($this->connection->config()['port'] == 443)? 'https://': 'http://';
-    $url .= $this->connection->config()['host'].'/'.$index;
+    $url .= $this->connection->config()['host'].'/'.$indexName;
 
     if($this->client == null) $this->client = new Client();
     $response = $this->client->get($url);
     if($response->code == 200)
     {
-      $this->index = $index;
+      $this->indexName = $indexName;
       $this->collectMapping(json_decode($response->body(),true),$table);
     }else
     {
-      $this->err('error with index:"'.$index.'"');
+      $this->err('error with index:"'.$indexName.'"');
       debug(json_decode($response->body(),true));
-      return $this->main($index, $table);
+      return $this->main(null, $table);
     }
   }
 
   public function collectMapping($json, $table)
   {
-    if(empty($json[$this->index]['mappings'])){
-      $this->err('no mappings found for index:"'.$index.'"');
+    if(empty($json[$this->indexName]['mappings'])){
+      $this->err('no mappings found for index:"'.$this->indexName.'"');
       return $this->main(null, $table);
     }
 
     // collect types
-    $types = array_keys($json[$this->index]['mappings']);
-    $type = $this->in('In which table/type would you import MySQL data?',$types,$types[0]);
-    $this->properties = $json[$this->index]['mappings'][$type]['properties'];
+    $documents = array_keys($json[$this->indexName]['mappings']);
+    $document = $this->in('In which document would you import MySQL data?',$documents,$documents[0]);
+    $this->properties = $json[$this->indexName]['mappings'][$document]['properties'];
 
     // test model now
-    $this->type = TypeRegistry::get($type);
+    $this->index = IndexRegistry::get($document);
     $this->testTable($table);
   }
 
@@ -96,49 +96,65 @@ class importTask extends ElasticeSearchConnectTask
   public function createMapping()
   {
     // reset!
-    $properties = $this->properties;
-    foreach($properties as $key => &$value) $value = null;
+    $properties = [];
 
     $this->info('Ok let\'s build the mapping now...');
-    foreach($properties as $key => &$value)
+    foreach($this->properties as $key => $prop)
     {
-      $value = null;
+      $properties[$key] = ['value' => null,'type' => null];
+
       if($key == 'model') continue;
       if($key == 'locale') continue;
-      if($this->in('assign ES "'.$key.'" key with a table\'s field?',['y', 'n'],'y') == 'n')continue;
+      if($this->in('assign ES "'.$key.'" key with a table\'s field?',['y', 'n'],'y') == 'n')
+      {
+        if($this->in('assign ES "'.$key.'" key with a static value?',['y', 'n'],'y') == 'n') continue;
+        $value = $this->in('Please nter ES "'.$key.'" value, or type "cancel" to cacncel');
+        if($value == 'cancel') continue;
+        $properties[$key]['type'] = 'static';
+      }
 
-      foreach($this->table->getSchema()->columns() as $number => $field) $this->out($number.': '.$field);
-      $value = $this->in('Build ES "'.$key.'" with comma separated preceding fields: ( type in number(s) )');
+      if(empty($properties[$key]['type']))
+      {
+        foreach($this->table->getSchema()->columns() as $number => $field) $this->out($number.': '.$field);
+        $value = $this->in('Build ES "'.$key.'" with comma separated preceding fields: ( type in number(s) )');
+        $properties[$key]['type'] = 'fields';
+      }
+
+      $properties[$key]['value'] = $value;
     }
 
     $count = 0;
-    foreach($properties as $key => &$value)
+    foreach($properties as $key => $prop)
     {
       if($key == 'model') continue;
       if($key == 'locale') continue;
-      if($value == null) continue;
+      if($prop['value'] == null) continue;
 
-      $fields = explode(',', $value);
-      $count = (count($fields) > $count)? count($fields):$count;
-      $value = [];
-
-      foreach($fields as $field) $value[] = $this->table->getSchema()->columns()[trim($field)];
+      if($prop['type'] == 'fields')
+      {
+        $fields = explode(',', $prop['value']);
+        $count = (count($fields) > $count)? count($fields):$count;
+        $properties[$key]['value'] = [];
+        foreach($fields as $field) $properties[$key]['value'][] = $this->table->getSchema()->columns()[trim($field)];
+      }else{
+        $count = (1 > $count)? 1:$count;
+        $properties[$key]['value'] = [$properties[$key]['value']];
+      }
     }
 
-    $this->info('Mapping for '.$this->type->alias().': ');
+    $this->info('Mapping for '.$this->index->alias().': ');
     $mapping = [];
     $mapping[] = array_keys($properties);
     for($i = 0; $i < $count; $i++)
     {
       $row = [];
-      foreach($properties as $field => $f) $row[] = ($f == null || empty($f[$i]))? null: $f[$i];
+      foreach($properties as $prop) $row[] = empty($prop['value'][$i])? null: ($prop['type'] == 'static'? $prop['value'][$i].'(static)': $prop['value'][$i]);
       $mapping[] = $row;
     }
+
     $this->helper('Table')->output($mapping);
-
     if($this->in('looks good?',['y', 'n'],'y') == 'n') return $this->createMapping();
-
-    $this->import($properties);
+    //$this->import($properties);
   }
 
   public function import($mapping)
@@ -288,6 +304,7 @@ class importTask extends ElasticeSearchConnectTask
 
   public function save($items)
   {
-    return $this->type->saveMany($this->type->newEntities($items));
+    debug($this->index->newEntities($items));
+    //return $this->index->saveMany($this->index->newEntities($items));
   }
 }
