@@ -154,7 +154,7 @@ class importTask extends ElasticeSearchConnectTask
 
     $this->helper('Table')->output($mapping);
     if($this->in('looks good?',['y', 'n'],'y') == 'n') return $this->createMapping();
-    //$this->import($properties);
+    $this->import($properties);
   }
 
   public function import($mapping)
@@ -207,6 +207,10 @@ class importTask extends ElasticeSearchConnectTask
 
         if($field == 'model'){ $item[$field] = $model; continue; }
         if($field == 'locale'){ $item[$field] = $defaultLocale; continue; }
+
+        // new since our static type
+        if($entityFileds['type'] == 'static') { $item[$field] = $entityFileds['type'][0]; continue; }
+        $entityFileds = $entityFileds['value'];
 
         if(!empty($entityFileds))
         {
@@ -305,6 +309,6 @@ class importTask extends ElasticeSearchConnectTask
   public function save($items)
   {
     debug($this->index->newEntities($items));
-    //return $this->index->saveMany($this->index->newEntities($items));
+    return $this->index->saveMany($this->index->newEntities($items));
   }
 }
