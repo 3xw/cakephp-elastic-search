@@ -18,54 +18,82 @@ class SyncWithESBehavior extends Behavior
     'primaryKey' => 'foreign_key', // string or callable
     'translate' => false, // property name if yes ex: locale
     'staticMatching' => false, // or [keyN => valueN/callableN]
-    'mappings' => [ // properties to entity field(s) => Array || string for static value || callable
-      //'model' => 'foreign_key',
+    'mappings' => [ // properties => 1. Array: entity field(s) || properties => 2. String: static value or callable
       'title' => ['title'],
       'content' => ['header','body']
-    ]
+    ],
+    'deleteDocument' => true
   ];
 
   public $index = null;
 
-  public $items = [];
+  public $documents = [];
 
   public function beforeSave(Event $event, EntityInterface $entity, ArrayObject $options)
   {
-    if($this->getConfig('translate')) foreach(Configure::read('I18n.languages') as $locale) $this->items[] = $this->setEsEntity($entity, $locale);
-    else $this->items[] = $this->setEsEntity($entity);
+    if($this->getConfig('translate')) foreach(Configure::read('I18n.languages') as $locale) $this->documents[] = $this->patchDocument($entity, $locale);
+    else $this->documents[] = $this->patchDocument($entity);
   }
 
-  public function setEsEntity($entity, $locale = null)
+  public function afterSave(Event $event, EntityInterface $entity, ArrayObject $options)
   {
-    if($entity->isNew()) return $this->getNewOne($entity, $locale);
+    foreach($this->documents as $document)
+    {
+      if(!$document->get('foreign_key')) $document->set('foreign_key', $entity->get($this->getConfig('primaryKey')));
+      if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $valueOrCallable) $document->set($key, $this->getValueOrCallable($valueOrCallable));
+      $result = $this->getIndex()->save($document);
+      //if(!$result) debug($document->errors());
+    }
+  }
+
+  public function afterDelete(Event $event, EntityInterface $entity, ArrayObject $options)
+  {
+    if(!$this->getConfig('deleteDocument')) return;
+
+    // get document(s) to delete
+    $docs = $this->bulidQuery($entity)->toArray();
+    foreach ($docs as $doc) $this->getIndex()->delete($doc);
+  }
+
+  public function getIndex()
+  {
+    if($this->index == null) $this->index = IndexRegistry::get($this->getConfig('index'));
+    return $this->index;
+  }
+
+  public function patchDocument($entity, $locale = null)
+  {
+    if($entity->isNew()) return $this->newDocument($entity, $locale);
 
     // construct Query
-    $query = $this->getIndex()->find()
-    ->queryMust(new Match($this->getConfig('primaryKey'), $entity->get($this->getTable()->getPrimaryKey()) ));
-    if($this->getConfig('staticMatching'))
-    {
-      foreach($this->getConfig('staticMatching') as $key => $valueOrCallable) $query->queryMust(new Match($key, $this->getValueOrCallable($valueOrCallable) ));
-    }
-    if($this->getConfig('translate')) $query->queryMust(new Match($this->getConfig('translate'), $locale));
+    $query = $this->buildQuery($entiy, $locale);
 
     // check items
     $document = $query->first();
-    if(empty($document)) $item = $this->getNewOne($entity, $locale);
-    else $item = $this->getIndex()->patchEntity($document, $this->retrieveData($entity, $locale));
-    return $item;
+    if(empty($document)) $document = $this->newDocument($entity, $locale);
+    else $document = $this->getIndex()->patchEntity($document, $this->retrieveData($entity, $locale));
+    return $document;
   }
 
-  public function getNewOne($entity, $locale = null)
+  public function newDocument($entity, $locale = null)
   {
-    return $this->getIndex()->patchEntity($this->getIndex()->newEntity(), $this->retrieveData($entity, $locale));
+    return $this->getIndex()->patchEntity($this->getIndex()->newEntity(), $this->newData($entity, $locale));
   }
 
-  public function retrieveData($entity, $locale = null)
+  public function buildQuery($entity, $locale = null)
   {
-    return ($locale == null || $locale == Configure::read('App.defaultLocale') )? $this->_retrieveData($entity): $this->_retrieveData( $entity->get('_translations')[$locale] );
+    $query = $this->getIndex()->find()->queryMust(new Match($this->getConfig('primaryKey'), $entity->get($this->getTable()->getPrimaryKey())));
+    if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $valueOrCallable) $query->queryMust(new Match($key, $this->getValueOrCallable($valueOrCallable)));
+    if($this->getConfig('translate') && $locale) $query->queryMust(new Match($this->getConfig('translate'), $locale));
+    return $query;
   }
 
-  protected function _retrieveData($entity)
+  public function newData($entity, $locale = null)
+  {
+    return ($locale == null || $locale == Configure::read('App.defaultLocale') )? $this->_newData($entity): $this->_newData( $entity->get('_translations')[$locale] );
+  }
+
+  protected function _newData($entity)
   {
     $data = [];
     $data[$this->getConfig('primaryKey')] = $this->getTable()->getPrimaryKey();
@@ -82,34 +110,4 @@ class SyncWithESBehavior extends Behavior
     else if(is_callable($value)) return call_user_func($value);
     else return $fields;
   }
-
-  public function afterSave(Event $event, EntityInterface $entity, ArrayObject $options)
-  {
-    foreach($this->items as $item)
-    {
-      if(!$item->get('foreign_key')) $item->set('foreign_key', $entity->get($this->_config['mapping']['foreign_key']));
-      $result = $this->getIndex()->save($item);
-      if(!$result) debug($item->errors());
-    }
-  }
-
-  public function afterDelete(Event $event, EntityInterface $entity, ArrayObject $options)
-  {
-    // construct Query
-    $query = $this->getIndex()->find()
-    ->queryMust(new Match('foreign_key', $entity->get($this->_config['mapping']['foreign_key']) ))
-    ->queryMust(new Match('model', $this->_table->getAlias() ));
-
-    // get them
-    $items = $query->toArray();
-    foreach ($items as $item) $this->getIndex()->delete($item);
-  }
-
-  public function getIndex()
-  {
-    if($this->index == null) $this->index = IndexRegistry::get($this->_config['index']);
-    return $this->index;
-  }
-
-
 }
