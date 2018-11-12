@@ -16,9 +16,8 @@ class SyncWithESBehavior extends Behavior
   protected $_defaultConfig = [
     'index' => 'Trois\ElasticSearch\Model\Index\ItemsIndex',
     'primaryKey' => 'foreign_key', // string or callable
-    'secondaryKey' => false, // propertyName if yes
-    'secondaryValue' => false, // value or callable if yes
     'translate' => false, // property name if yes ex: locale
+    'staticMatching' => false, // or [keyN => valueN/callableN]
     'mappings' => [ // properties to entity field(s) => Array || string for static value || callable
       //'model' => 'foreign_key',
       'title' => ['title'],
@@ -43,7 +42,10 @@ class SyncWithESBehavior extends Behavior
     // construct Query
     $query = $this->getIndex()->find()
     ->queryMust(new Match($this->getConfig('primaryKey'), $entity->get($this->getTable()->getPrimaryKey()) ));
-    if($this->getConfig('primaryKey')) $query->queryMust(new Match($this->getConfig('primaryKey'), $this->getCallableOrNotValue($this->getConfig('primaryValue')) ));
+    if($this->getConfig('staticMatching'))
+    {
+      foreach($this->getConfig('staticMatching') as $key => $valueOrCallable) $query->queryMust(new Match($key, $this->getValueOrCallable($valueOrCallable) ));
+    }
     if($this->getConfig('translate')) $query->queryMust(new Match($this->getConfig('translate'), $locale));
 
     // check items
@@ -66,16 +68,16 @@ class SyncWithESBehavior extends Behavior
   protected function _retrieveData($entity)
   {
     $data = [];
-    $data[$this->_config['primaryKey']] = $this->getTable()->getPrimaryKey();
-    foreach($this->_config['mapping'] as $prop => $fields )
+    $data[$this->getConfig('primaryKey')] = $this->getTable()->getPrimaryKey();
+    foreach($this->getConfig('mapping') as $prop => $fields )
     {
       if(is_array($fields)) foreach($fields as $field) $data[$prop] = $entity->get($field);
-      else $data[$prop] = $this->getCallableOrNotValue($fields);
+      else $data[$prop] = $this->getValueOrCallable($fields);
     }
     return $data;
   }
 
-  protected function getCallableOrNotValue($value)
+  protected function getValueOrCallable($value)
   {
     else if(is_callable($value)) return call_user_func($value);
     else return $fields;
