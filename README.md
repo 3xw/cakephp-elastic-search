@@ -26,68 +26,87 @@ in app.php add at least one connection:
 		...
 	]
 
-## Caution
-if you use elastic search >= 6 please chage rufin/elastic package like so: (https://github.com/ruflin/Elastica/pull/1414/commits/7db40ee6980273bcae0974f4f0c2e88f2dd692a5)[check issue]
-
-	// lib/Elastica/Transport/Http.php ~line 114
-	$headers = [];
-	$headers[] = 'Accept: application/json';
-	$headers[] = 'Content-Type: application/json';
-
 ## Mapping
 The shell will ask you a mapping template.
-Follow offical doc [native elasticsearch mapping format](https://www.elastic.co/guide/en/elasticsearch/reference/1.5/mapping.html) to create your own index mapping or use default one which the prompt proposes you: vendor/3xw/cakephp-elastic-search/templates/mapping.json
+Follow offical doc [native elasticsearch mapping format](https://www.elastic.co/guide/en/elasticsearch/reference/6.x/mapping.html) to create your own index mapping or use default one which the prompt proposes you: vendor/3xw/cakephp-elastic-search/templates/mapping.json
 
 	{
+		"settings": {
+	    "analysis": {
+	      "filter": {
+	        "french_elision": {
+	          "type":"elision",
+	          "articles_case": true,
+	          "articles": [
+	            "l", "m", "t", "qu", "n", "s",
+	            "j", "d", "c", "jusqu", "quoiqu",
+	            "lorsqu", "puisqu","t"
+	          ]
+	        },
+	        "french_stop": {
+	          "type":       "stop",
+	          "stopwords":  "_french_"
+	        },
+	        "french_keywords": {
+	          "type":       "keyword_marker",
+	          "keywords":   [
+	            "Prométerre",
+	            "Agrivit","Ecoprest","Estimapro","Fidasol","Fiprom",
+	            "Fondation rurale de prévoyance","FRP",
+	            "Mandaterre",
+	            "Office de crédit agricole","OCA",
+	            "Proconseil","Proterroir","SAD","SRPJ","Sofia SA"
+	          ]
+	        },
+	        "french_stemmer": {
+	          "type":       "stemmer",
+	          "language":   "light_french"
+	        }
+	      },
+	      "analyzer": {
+	        "french": {
+	          "tokenizer":  "standard",
+	          "filter": [
+	            "french_elision",
+	            "lowercase",
+	            "french_stop",
+	            "french_keywords",
+	            "french_stemmer"
+	          ]
+	        }
+	      }
+	    }
+	  },
 	  "mappings": {
 	    "items": {
 	      "properties": {
-
-	        "locale": { "type": "string", "index": "not_analyzed"},
-	        "model": { "type": "string", "index": "not_analyzed"},
-	        "foreign_key": { "type": "integer", "index": "not_analyzed"},
-
-	        "created": { "type": "date", "format": "date_time", "index": "not_analyzed"},
-	        "modified": { "type": "date", "format": "date_time", "index": "not_analyzed"},
-
-	        "title": { "type": "string"},
-	        "slug": { "type": "string"},
-	        "content": { "type": "string"}
+	        "foreign_key": { "type": "integer"},
+	        "model": { "type": "keyword"},
+	        "title": {"type": "completion", "analyzer":"french", "max_input_length": 255},
+	        "content": {"type": "text"}
 	      }
 	    }
 	  }
 	}
 
-Optionally you can add 'settings', 'aliases' and 'warmers' keys and objects to cutomize your indexes. The shell will forfill settings for you with [-r 1] and [-s 5] params as follow:
-
-	"settings" : {
-	    "index" : {
-		    "number_of_shards" : 5,
-		    "number_of_replicas" : 1
-	    }
-    }
 
 ## Behavior
 set up your behavior as you wish
 
-	$this->addBehavior('Trois/ElasticSearch.SyncWithES',[
-		'type' => 'Trois/ElasticSearch.Items', // or your own....
-		'translate' => true,
-		'mapping' => [						// follow your own ES type mapping
-			'foreign_key' => 'id',			// default here
-			'modified' => 'modified',		// optionary
-			'created' => 'created',			// optionary
-			'title' => 'title',				// default here
-			'slug' => 'slug',				// default here
-			'content' => [					// array of custom fields to gather in one
-				'author',
-				'guest',
-				'header',
-				'body'
-			]
-		]
+	$this->addBehavior(\Trois\ElasticSearch\ORM\Behavior\SyncWithESBehavior::class,[
+      'index' => 'App\Model\Index\ItemsIndex',
+      'primaryKey' => 'foreign_key', // string or callable
+      'translate' => false, // property name if yes ex: locale
+      'staticMatching' => [
+        'model' => 'Posts'
+      ], // or [keyN => valueN/callableN]
+      'mapping' => [ // properties => 1. Array: entity field(s) || properties => 2. String: static value or callable
+        'title' => ['title'],
+        'content' => ['header','content']
+      ],
+      'deleteDocument' => true
     ]);
-
+    
 ## Shell
 Create indexes
 
