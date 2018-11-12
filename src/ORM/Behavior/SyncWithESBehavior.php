@@ -18,10 +18,7 @@ class SyncWithESBehavior extends Behavior
     'primaryKey' => 'foreign_key', // string or callable
     'translate' => false, // property name if yes ex: locale
     'staticMatching' => false, // or [keyN => valueN/callableN]
-    'mappings' => [ // properties => 1. Array: entity field(s) || properties => 2. String: static value or callable
-      'title' => ['title'],
-      'content' => ['header','body']
-    ],
+    'mapping' => false, // properties => 1. Array: entity field(s) || properties => 2. String: static value or callable
     'deleteDocument' => true
   ];
 
@@ -51,7 +48,7 @@ class SyncWithESBehavior extends Behavior
     if(!$this->getConfig('deleteDocument')) return;
 
     // get document(s) to delete
-    $docs = $this->bulidQuery($entity)->toArray();
+    $docs = $this->buildQuery($entity)->toArray();
     foreach ($docs as $doc) $this->getIndex()->delete($doc);
   }
 
@@ -66,12 +63,12 @@ class SyncWithESBehavior extends Behavior
     if($entity->isNew()) return $this->newDocument($entity, $locale);
 
     // construct Query
-    $query = $this->buildQuery($entiy, $locale);
+    $query = $this->buildQuery($entity, $locale);
 
     // check items
     $document = $query->first();
     if(empty($document)) $document = $this->newDocument($entity, $locale);
-    else $document = $this->getIndex()->patchEntity($document, $this->retrieveData($entity, $locale));
+    else $document = $this->getIndex()->patchEntity($document, $this->newData($entity, $locale));
     return $document;
   }
 
@@ -90,13 +87,13 @@ class SyncWithESBehavior extends Behavior
 
   public function newData($entity, $locale = null)
   {
-    return ($locale == null || $locale == Configure::read('App.defaultLocale') )? $this->_newData($entity): $this->_newData( $entity->get('_translations')[$locale] );
+    return ($locale == null  || ($locale == Configure::read('App.defaultLocale')))? $this->_newData($entity): $this->_newData($entity->get('_translations')[$locale]);
   }
 
   protected function _newData($entity)
   {
     $data = [];
-    $data[$this->getConfig('primaryKey')] = $this->getTable()->getPrimaryKey();
+    $data[$this->getConfig('primaryKey')] = $entity->get($this->getTable()->getPrimaryKey());
     foreach($this->getConfig('mapping') as $prop => $fields )
     {
       if(is_array($fields)) foreach($fields as $field) $data[$prop] = $entity->get($field);
@@ -107,7 +104,7 @@ class SyncWithESBehavior extends Behavior
 
   protected function getValueOrCallable($value)
   {
-    else if(is_callable($value)) return call_user_func($value);
-    else return $fields;
+    if(is_callable($value)) return call_user_func($value);
+    else return $value;
   }
 }

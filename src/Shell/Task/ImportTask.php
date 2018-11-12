@@ -308,7 +308,6 @@ class importTask extends ElasticeSearchConnectTask
 
   public function save($items)
   {
-    debug($this->index->newEntities($items));
     return $this->index->saveMany($this->index->newEntities($items));
   }
 }
