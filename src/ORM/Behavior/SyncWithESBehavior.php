@@ -96,7 +96,8 @@ class SyncWithESBehavior extends Behavior
     $data[$this->getConfig('primaryKey')] = $entity->get($this->getTable()->getPrimaryKey());
     foreach($this->getConfig('mapping') as $prop => $fields )
     {
-      if(is_array($fields)) foreach($fields as $field) $data[$prop] = $entity->get($field);
+      $data[$prop] = '';
+      if(is_array($fields)) foreach($fields as $field) $data[$prop] .= $entity->get($field);
       else $data[$prop] = $this->getValueOrCallable($fields);
     }
     return $data;
