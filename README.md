@@ -104,7 +104,8 @@ set up your behavior as you wish
         'title' => ['title'],
         'content' => ['header','content']
       ],
-      'deleteDocument' => true
+      'deleteDocument' => true,
+      'separator' => ' - '
     ]);
     
 ## Shell

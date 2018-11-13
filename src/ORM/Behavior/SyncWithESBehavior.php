@@ -19,7 +19,8 @@ class SyncWithESBehavior extends Behavior
     'translate' => false, // property name if yes ex: locale
     'staticMatching' => false, // or [keyN => valueN/callableN]
     'mapping' => false, // properties => 1. Array: entity field(s) || properties => 2. String: static value or callable
-    'deleteDocument' => true
+    'deleteDocument' => true,
+    'separator' => ' - '
   ];
 
   public $index = null;
@@ -96,8 +97,12 @@ class SyncWithESBehavior extends Behavior
     $data[$this->getConfig('primaryKey')] = $entity->get($this->getTable()->getPrimaryKey());
     foreach($this->getConfig('mapping') as $prop => $fields )
     {
-      $data[$prop] = '';
-      if(is_array($fields)) foreach($fields as $field) $data[$prop] .= $entity->get($field);
+      if(is_array($fields))
+      {
+        $data[$prop] = '';
+        foreach($fields as $field) $data[$prop] .= $entity->get($field).$this->getConfig('separator');
+        $data[$prop] = substr($data[$prop], 0, strlen($data[$prop]) - strlen($this->getConfig('separator')));
+      }
       else $data[$prop] = $this->getValueOrCallable($fields);
     }
     return $data;
