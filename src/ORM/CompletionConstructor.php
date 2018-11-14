@@ -37,9 +37,9 @@ class CompletionConstructor {
         if(is_array($value))
         {
           $contexts[$ctx] = [];
-          foreach($this->input as $field) $contexts[$ctx][] = $entity->get($field);
+          foreach($value as $field) $contexts[$ctx][] = $entity->get($field);
         }
-        else $contexts[$ctx] = $this->getValueOrCallable($this->input);
+        else $contexts[$ctx] = $this->getValueOrCallable($value);
       }
       $property['contexts'] = $contexts;
     }
