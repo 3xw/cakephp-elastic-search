@@ -104,7 +104,8 @@ set up your behavior as you wish
         'title' => new \Trois\ElasticSearch\ORM\CompletionConstructor(['title'],[
 	      'contexts' => [
 	        'model' => 'Posts'
-	      ]
+	      ],
+	     ]),
         'content' => ['header','content']
       ],
       'deleteDocument' => true,
