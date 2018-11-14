@@ -21,6 +21,8 @@ class importTask extends ElasticeSearchConnectTask
 
   public $table = null;
 
+  public $completions = [];
+
   public function main($indexName = null, $table = null)
   {
     // set index
@@ -65,6 +67,8 @@ class importTask extends ElasticeSearchConnectTask
     $document = $this->in('In which document would you import MySQL data?',$documents,$documents[0]);
     $this->properties = $json[$this->indexName]['mappings'][$document]['properties'];
 
+    debug($this->properties);
+
     // test model now
     $this->index = IndexRegistry::get($document);
     $this->testTable($table);
@@ -101,14 +105,14 @@ class importTask extends ElasticeSearchConnectTask
     $this->info('Ok let\'s build the mapping now...');
     foreach($this->properties as $key => $prop)
     {
-      $properties[$key] = ['value' => null,'type' => null];
+      $properties[$key] = ['value' => null,'type' => null, 'contexts' => null];
 
       if($key == 'model') continue;
       if($key == 'locale') continue;
-      if($this->in('assign ES "'.$key.'" key with a table\'s field?',['y', 'n'],'y') == 'n')
+      if($this->in('assign ES property "'.$key.'" with a table\'s field?',['y', 'n'],'y') == 'n')
       {
         if($this->in('assign ES "'.$key.'" key with a static value?',['y', 'n'],'y') == 'n') continue;
-        $value = $this->in('Please nter ES "'.$key.'" value, or type "cancel" to cacncel');
+        $value = $this->in('Please enter ES "'.$key.'" value, or type "cancel" to cacncel');
         if($value == 'cancel') continue;
         $properties[$key]['type'] = 'static';
       }
@@ -118,6 +122,20 @@ class importTask extends ElasticeSearchConnectTask
         foreach($this->table->getSchema()->columns() as $number => $field) $this->out($number.': '.$field);
         $value = $this->in('Build ES "'.$key.'" with comma separated preceding fields: ( type in number(s) )');
         $properties[$key]['type'] = 'fields';
+      }
+
+      if(!empty($prop['contexts']))
+      {
+        foreach($prop['contexts'] as $context)
+        {
+          if($this->in('assign context "'.$context['name'].'" of property "'.$key.'" with a static value?',['y', 'n'],'y') == 'y')
+          {
+            $ctx = $this->in('Please enter static value for context "'.$context['name'].'" or type "cancel" to cacncel');
+            if($ctx == 'cancel') continue;
+            if(empty($properties[$key]['contexts'])) $properties[$key]['contexts'] = [];
+            $properties[$key]['contexts'][$context['name']] = $ctx;
+          }
+        }
       }
 
       $properties[$key]['value'] = $value;
@@ -135,7 +153,7 @@ class importTask extends ElasticeSearchConnectTask
         $fields = explode(',', $prop['value']);
         $count = (count($fields) > $count)? count($fields):$count;
         $properties[$key]['value'] = [];
-        foreach($fields as $field) $properties[$key]['value'][] = $this->table->getSchema()->columns()[trim($field)];
+        foreach($fields as $field)$properties[$key]['value'][] = $this->table->getSchema()->columns()[trim($field)];
       }else{
         $count = (1 > $count)? 1:$count;
         $properties[$key]['value'] = [$properties[$key]['value']];
@@ -210,6 +228,7 @@ class importTask extends ElasticeSearchConnectTask
 
         // new since our static type
         if($entityFileds['type'] == 'static') { $item[$field] = $entityFileds['type'][0]; continue; }
+        $contexts = empty($entityFileds['contexts'])? false: $entityFileds['contexts'];
         $entityFileds = $entityFileds['value'];
 
         if(!empty($entityFileds))
@@ -222,6 +241,15 @@ class importTask extends ElasticeSearchConnectTask
             }
             else foreach($entityFileds as $entityFiled) $item[$field] .= $caster($entity, $entityFiled, $properties[$field]['type']);
           }
+        }
+
+        // contexts
+        if($contexts)
+        {
+          $item[$field] = [
+            'input' => $item[$field],
+            'contexts' => $contexts
+          ];
         }
 
       }
@@ -263,6 +291,16 @@ class importTask extends ElasticeSearchConnectTask
                 }
               }
             }
+
+            // $contexts
+            if($contexts)
+            {
+              $localeItem[$field] = [
+                'input' => $localeItem[$field],
+                'contexts' => $contexts
+              ];
+            }
+
           }
           $mapReduce->emitIntermediate($localeItem, $entity->id);
         }
@@ -308,6 +346,7 @@ class importTask extends ElasticeSearchConnectTask
 
   public function save($items)
   {
+    //debug($this->index->newEntities($items));
     return $this->index->saveMany($this->index->newEntities($items));
   }
 }

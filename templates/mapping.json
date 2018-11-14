@@ -50,7 +50,15 @@
       "properties": {
         "foreign_key": { "type": "integer"},
         "model": { "type": "keyword"},
-        "title": {"type": "completion", "analyzer":"french", "max_input_length": 255},
+        "title": {
+        	"type": "completion",
+        	"analyzer":"french",
+        	"max_input_length": 255,
+        	"contexts": {
+        		"name": "model",
+        		"type": "category"
+        	}
+        },
         "content": {"type": "text"}
       }
     }

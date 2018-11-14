@@ -10,6 +10,7 @@ use Cake\ORM\Entity;
 use Cake\Core\Configure;
 use Elastica\Query\Match;
 use ArrayObject;
+use Trois\ElasticSearch\ORM\CompletionConstructor;
 
 class SyncWithESBehavior extends Behavior
 {
@@ -18,7 +19,7 @@ class SyncWithESBehavior extends Behavior
     'primaryKey' => 'foreign_key', // string or callable
     'translate' => false, // property name if yes ex: locale
     'staticMatching' => false, // or [keyN => valueN/callableN]
-    'mapping' => false, // properties => 1. Array: entity field(s) || properties => 2. String: static value or callable
+    'mapping' => false, // properties => 1. Array: entity field(s) || properties => 2. String: static value or callable || 3. CompletionConstructor
     'deleteDocument' => true,
     'separator' => ' - '
   ];
@@ -102,7 +103,7 @@ class SyncWithESBehavior extends Behavior
         $data[$prop] = '';
         foreach($fields as $field) $data[$prop] .= $entity->get($field).$this->getConfig('separator');
         $data[$prop] = substr($data[$prop], 0, strlen($data[$prop]) - strlen($this->getConfig('separator')));
-      }
+      }else if($fields instanceof CompletionConstructor) $data[$prop] = $fields->newProperty($entity, $this->getConfig('separator'));
       else $data[$prop] = $this->getValueOrCallable($fields);
     }
     return $data;

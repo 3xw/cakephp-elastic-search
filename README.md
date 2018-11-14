@@ -101,7 +101,10 @@ set up your behavior as you wish
         'model' => 'Posts'
       ], // or [keyN => valueN/callableN]
       'mapping' => [ // properties => 1. Array: entity field(s) || properties => 2. String: static value or callable
-        'title' => ['title'],
+        'title' => new \Trois\ElasticSearch\ORM\CompletionConstructor(['title'],[
+	      'contexts' => [
+	        'model' => 'Posts'
+	      ]
         'content' => ['header','content']
       ],
       'deleteDocument' => true,

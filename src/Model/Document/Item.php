@@ -13,6 +13,7 @@ class Item extends Document
 
   public function _setTitle($title)
   {
-    return str_replace(["\r", "\n", "\t"], '', html_entity_decode(strip_tags($title)));
+    $title['input'] = str_replace(["\r", "\n", "\t"], '', html_entity_decode(strip_tags($title['input'])));
+    return $title;
   }
 }
