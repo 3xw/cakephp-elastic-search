@@ -1,65 +1,72 @@
 {
 	"settings": {
     "analysis": {
-      "filter": {
-        "french_elision": {
-          "type":"elision",
-          "articles_case": true,
-          "articles": [
-            "l", "m", "t", "qu", "n", "s",
-            "j", "d", "c", "jusqu", "quoiqu",
-            "lorsqu", "puisqu","t"
-          ]
+      "analyzer": {
+        "custom_index_analyzer": {
+          "type" : "custom",
+          "tokenizer" : "standard",
+          "filter": ["asciifolding" ,"lowercase", "snowball_FR", "snowball_DE","elision", "worddelimiter", "stemmer_FR", "stemmer_DE"]
         },
-        "french_stop": {
-          "type":       "stop",
-          "stopwords":  "_french_"
-        },
-        "french_keywords": {
-          "type":       "keyword_marker",
-          "keywords":   [
-            "Prométerre",
-            "Agrivit","Ecoprest","Estimapro","Fidasol","Fiprom",
-            "Fondation rurale de prévoyance","FRP",
-            "Mandaterre",
-            "Office de crédit agricole","OCA",
-            "Proconseil","Proterroir","SAD","SRPJ","Sofia SA"
-          ]
-        },
-        "french_stemmer": {
-          "type":       "stemmer",
-          "language":   "light_french"
+        "custom_search_analyzer": {
+          "type" : "custom",
+          "tokenizer" : "standard",
+          "filter": ["asciifolding" ,"lowercase", "snowball_FR", "snowball_DE","elision", "worddelimiter", "stemmer_FR", "stemmer_DE"]
         }
       },
-      "analyzer": {
-        "french": {
-          "tokenizer":  "standard",
-          "filter": [
-            "french_elision",
-            "lowercase",
-            "french_stop",
-            "french_keywords",
-            "french_stemmer"
-          ]
+      "filter": {
+        "elision": {
+          "type": "elision",
+          "articles_case": true,
+            "articles": [
+              "l", "m", "t", "qu", "n", "s",
+              "j", "d", "c", "jusqu", "quoiqu",
+              "lorsqu", "puisqu"
+            ]
+        },
+				"worddelimiter": {
+          "type": "word_delimiter"
+        },
+        "snowball_FR": {
+          "type": "snowball",
+          "language": "French"
+        },
+				"snowball_DE": {
+          "type": "snowball",
+          "language": "German"
+        },
+        "stemmer_FR": {
+          "type": "stemmer",
+          "language": "light_french"
+        },
+				"stemmer_DE": {
+          "type": "stemmer",
+          "language": "light_german"
         }
       }
     }
   },
   "mappings": {
     "items": {
-      "properties": {
+			"properties": {
+				"locale": { "type": "keyword" },
         "foreign_key": { "type": "integer"},
+				"is_published": { "type": "boolean" },
         "model": { "type": "keyword"},
-        "title": {
+				"title": {
         	"type": "completion",
-        	"analyzer":"french",
+					"analyzer": "custom_index_analyzer",
+          "search_analyzer": "custom_search_analyzer",
         	"max_input_length": 255,
-        	"contexts": {
+					"contexts": {
         		"name": "model",
         		"type": "category"
         	}
         },
-        "content": {"type": "text"}
+				"content": {
+					"type": "text",
+					"analyzer": "custom_index_analyzer",
+          "search_analyzer": "custom_search_analyzer"
+				}
       }
     }
   }

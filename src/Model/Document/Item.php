@@ -16,4 +16,9 @@ class Item extends Document
     $title['input'] = str_replace(["\r", "\n", "\t"], '', html_entity_decode(strip_tags($title['input'])));
     return $title;
   }
+
+  public function _setIsPublished($bool)
+  {
+    return (bool) $bool;
+  }
 }

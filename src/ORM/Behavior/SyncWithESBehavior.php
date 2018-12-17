@@ -24,13 +24,21 @@ class SyncWithESBehavior extends Behavior
     'separator' => ' - '
   ];
 
+  protected $_primaryKey = null;
+
   public $index = null;
 
   public $documents = [];
 
   public function beforeSave(Event $event, EntityInterface $entity, ArrayObject $options)
   {
-    if($this->getConfig('translate')) foreach(Configure::read('I18n.languages') as $locale) $this->documents[] = $this->patchDocument($entity, $locale);
+    if($this->getConfig('translate'))
+    {
+      $lng = Configure::read('I18n.languages');
+      if(!is_array($lng)) throw new \Exception("I18n.languages should be an array!", 1);
+      if(array_shift($lng) !=  Configure::read('App.defaultLocale')) throw new \Exception("First item of I18n.languages should equal to App.defaultLocale", 1);
+      foreach(Configure::read('I18n.languages') as $locale) $this->documents[] = $this->patchDocument($entity, $locale);
+    }
     else $this->documents[] = $this->patchDocument($entity);
   }
 
@@ -89,13 +97,19 @@ class SyncWithESBehavior extends Behavior
 
   public function newData($entity, $locale = null)
   {
-    return ($locale == null  || ($locale == Configure::read('App.defaultLocale')))? $this->_newData($entity): $this->_newData($entity->get('_translations')[$locale]);
+    if($locale == null) return $this->_newData($entity);
+    if($locale == Configure::read('App.defaultLocale')) return $this->_newData($entity);
+    return $this->_newData($entity->get('_translations')[$locale]);
   }
 
   protected function _newData($entity)
   {
     $data = [];
-    $data[$this->getConfig('primaryKey')] = $entity->get($this->getTable()->getPrimaryKey());
+    $pkey = $this->getConfig('primaryKey');
+    $data[$pkey] = $entity->get($this->getTable()->getPrimaryKey());
+    if($data[$pkey]) $this->_primaryKey = $data[$pkey];
+    if(empty($data[$pkey]) && !empty($this->_primaryKey) && $this->getConfig('translate')) $data[$pkey] = $this->_primaryKey;
+
     foreach($this->getConfig('mapping') as $prop => $fields )
     {
       if(is_array($fields))
