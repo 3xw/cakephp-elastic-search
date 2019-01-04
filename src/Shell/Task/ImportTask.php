@@ -271,24 +271,25 @@ class importTask extends ElasticeSearchConnectTask
           $localeItem = $item;
           foreach($mapping as $field => $entityFileds)
           {
+            $localEntity[$field] = '';
+
             if($field == 'locale'){ $localeItem[$field] = $locale; continue; }
             if($field == 'model') continue;
 
+            // new since our static type
+            if($entityFileds['type'] == 'static') { $localEntity[$field] = $entityFileds['type'][0]; continue; }
+            $contexts = empty($entityFileds['contexts'])? false: $entityFileds['contexts'];
+            $entityFileds = $entityFileds['value'];
+
             if(!empty($entityFileds))
             {
-              if(!is_array($entityFileds)){
-                  if(!empty($localEntity->get($entityFileds))) $localeItem[$field] = $caster($localEntity, $entityFileds, $properties[$field]['type']);
-              }else{
-                if(count($entityFileds) == 1){
-                  foreach($entityFileds as $entityFiled){
-                    if($localEntity->get($entityFiled)) $localeItem[$field] =  $caster($localEntity, $entityFiled, $properties[$field]['type']);
-                  }
-                }else{
-                  $localeItem[$field] = '';
-                  foreach($entityFileds as $entityFiled){
-                    if($localEntity->get($entityFiled)) $localeItem[$field] .=  $caster($localEntity, $entityFiled, $properties[$field]['type']);
-                  }
+              if(!is_array($entityFileds)) $localEntity[$field] = $caster($localEntity, $entityFileds, $properties[$field]['type']);
+              else {
+                if(count($entityFileds) == 1 )
+                {
+                  foreach($entityFileds as $entityFiled) $localEntity[$field] = $caster($localEntity, $entityFiled, $properties[$field]['type']);
                 }
+                else foreach($entityFileds as $entityFiled) $localEntity[$field] .= $caster($localEntity, $entityFiled, $properties[$field]['type']);
               }
             }
 
