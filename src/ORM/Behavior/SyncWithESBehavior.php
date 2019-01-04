@@ -97,18 +97,20 @@ class SyncWithESBehavior extends Behavior
 
   public function newData($entity, $locale = null)
   {
-    if($locale == null) return $this->_newData($entity);
-    if($locale == Configure::read('App.defaultLocale')) return $this->_newData($entity);
-    return $this->_newData($entity->get('_translations')[$locale]);
+    if($locale == null) return $this->_newData($entity, $locale);
+    if($locale == Configure::read('App.defaultLocale')) return $this->_newData($entity, $locale);
+    return $this->_newData($entity->get('_translations')[$locale], $locale);
   }
 
-  protected function _newData($entity)
+  protected function _newData($entity, $locale)
   {
     $data = [];
     $pkey = $this->getConfig('primaryKey');
     $data[$pkey] = $entity->get($this->getTable()->getPrimaryKey());
     if($data[$pkey]) $this->_primaryKey = $data[$pkey];
     if(empty($data[$pkey]) && !empty($this->_primaryKey) && $this->getConfig('translate')) $data[$pkey] = $this->_primaryKey;
+
+    if($this->getConfig('translate')) $data[$this->getConfig('translate')] = $locale;
 
     foreach($this->getConfig('mapping') as $prop => $fields )
     {
