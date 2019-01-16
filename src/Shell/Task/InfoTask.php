@@ -14,8 +14,8 @@ class InfoTask extends ElasticeSearchConnectTask
     // set index
     if($index == null)
     {
-      $proposal = Inflector::slug(substr(ROOT, strrpos(ROOT, '/')),'_');
-      $index = $this->in('Index name ?',['www_'.$proposal,'dev_'.$proposal],'dev_'.$proposal);
+      $proposal = substr(substr(ROOT, strrpos(ROOT, '/')), 1, 4);
+      $index = $this->in('Index name ?',[],$proposal.'_items');
     }
     $index = Inflector::slug($index,'_');
 

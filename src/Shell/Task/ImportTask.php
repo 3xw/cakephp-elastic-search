@@ -28,8 +28,8 @@ class importTask extends ElasticeSearchConnectTask
     // set index
     if($indexName == null)
     {
-      $proposal = Inflector::slug(substr(ROOT, strrpos(ROOT, '/')),'_');
-      $indexName = $this->in('Index name for import ?');
+      $proposal = substr(substr(ROOT, strrpos(ROOT, '/')), 1, 4);
+      $indexName = $this->in('Index name ?',[],$proposal.'_items');
     }
     $indexName = Inflector::slug($indexName,'_');
 
@@ -269,10 +269,9 @@ class importTask extends ElasticeSearchConnectTask
         foreach($locales as $locale => $localEntity)
         {
           $localeItem = $item;
+
           foreach($mapping as $field => $entityFileds)
           {
-            $localEntity[$field] = '';
-
             if($field == 'locale'){ $localeItem[$field] = $locale; continue; }
             if($field == 'model') continue;
 
@@ -283,13 +282,20 @@ class importTask extends ElasticeSearchConnectTask
 
             if(!empty($entityFileds))
             {
-              if(!is_array($entityFileds)) $localEntity[$field] = $caster($localEntity, $entityFileds, $properties[$field]['type']);
+              if(!is_array($entityFileds))
+              {
+                if(!empty($localEntity->get($entityFileds))) $localeItem[$field] = $caster($localEntity, $entityFileds, $properties[$field]['type']);
+              }
               else {
                 if(count($entityFileds) == 1 )
                 {
-                  foreach($entityFileds as $entityFiled) $localEntity[$field] = $caster($localEntity, $entityFiled, $properties[$field]['type']);
+                  foreach($entityFileds as $entityFiled) if(!empty($localEntity->get($entityFiled))) $localeItem[$field] = $caster($localEntity, $entityFiled, $properties[$field]['type']);
                 }
-                else foreach($entityFileds as $entityFiled) $localEntity[$field] .= $caster($localEntity, $entityFiled, $properties[$field]['type']);
+                else
+                {
+                  $localeItem[$field] = '';
+                  foreach($entityFileds as $entityFiled) if(!empty($localEntity->get($entityFiled))) $localeItem[$field] .= $caster($localEntity, $entityFiled, $properties[$field]['type']);
+                }
               }
             }
 
@@ -332,6 +338,7 @@ class importTask extends ElasticeSearchConnectTask
         debug($items->error());
         break;
       }
+
       $this->save($items);
 
       // update
