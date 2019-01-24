@@ -227,7 +227,7 @@ class importTask extends ElasticeSearchConnectTask
         if($field == 'locale'){ $item[$field] = $defaultLocale; continue; }
 
         // new since our static type
-        if($entityFileds['type'] == 'static') { $item[$field] = $entityFileds['type'][0]; continue; }
+        if($entityFileds['type'] == 'static') { $item[$field] = $entityFileds['value'][0]; continue; }
         $contexts = empty($entityFileds['contexts'])? false: $entityFileds['contexts'];
         $entityFileds = $entityFileds['value'];
 
@@ -276,7 +276,7 @@ class importTask extends ElasticeSearchConnectTask
             if($field == 'model') continue;
 
             // new since our static type
-            if($entityFileds['type'] == 'static') { $localEntity[$field] = $entityFileds['type'][0]; continue; }
+            if($entityFileds['type'] == 'static') { $localEntity[$field] = $entityFileds['value'][0]; continue; }
             $contexts = empty($entityFileds['contexts'])? false: $entityFileds['contexts'];
             $entityFileds = $entityFileds['value'];
 
