@@ -30,6 +30,8 @@ class SyncWithESBehavior extends Behavior
 
   public $documents = [];
 
+  protected $_clonedEntity = null;
+
   public function beforeSave(Event $event, EntityInterface $entity, ArrayObject $options)
   {
     if($this->getConfig('translate'))
@@ -99,7 +101,15 @@ class SyncWithESBehavior extends Behavior
   {
     if($locale == null) return $this->_newData($entity, $locale);
     if($locale == Configure::read('App.defaultLocale')) return $this->_newData($entity, $locale);
-    return $this->_newData($entity->get('_translations')[$locale], $locale);
+
+    // if transaltion document then create from original one...
+    if(!$this->_clonedEntity)
+    {
+      $this->_clonedEntity = clone $this->documents[0];
+      $this->_clonedEntity->set('_translations', null);
+    }
+    $entity = $this->getIndex()->patchEntity($this->_clonedEntity, $entity->get('_translations')[$locale]->toArray());
+    return $this->_newData($entity, $locale);
   }
 
   protected function _newData($entity, $locale)
