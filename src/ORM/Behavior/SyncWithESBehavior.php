@@ -100,15 +100,18 @@ class SyncWithESBehavior extends Behavior
   public function newData($entity, $locale = null)
   {
     if($locale == null) return $this->_newData($entity, $locale);
-    if($locale == Configure::read('App.defaultLocale')) return $this->_newData($entity, $locale);
+    if($locale == Configure::read('App.defaultLocale'))
+    {
+      if(!$this->_clonedEntity)
+      {
+        $this->_clonedEntity = clone $entity;
+        $this->_clonedEntity->set('_translations', null);
+      }
+      return $this->_newData($entity, $locale);
+    }
 
     // if transaltion document then create from original one...
-    if(!$this->_clonedEntity)
-    {
-      $this->_clonedEntity = clone $this->documents[0];
-      $this->_clonedEntity->set('_translations', null);
-    }
-    $entity = $this->getIndex()->patchEntity($this->_clonedEntity, $entity->get('_translations')[$locale]->toArray());
+    $entity = $this->getTable()->patchEntity($this->_clonedEntity, $entity->get('_translations')[$locale]->toArray());
     return $this->_newData($entity, $locale);
   }
 
