@@ -202,7 +202,11 @@ class importTask extends ElasticeSearchConnectTask
           $value = (float) $entity->get($field);
           break;
         case 'date':
-          $value = (string) $entity->get($field)->format("Y-m-d\TH:i:s.000P");
+          if(empty($entity->get($field))){
+            $value = (string) '1970-01-01 00:00:00';
+          }else{
+            $value = (string) $entity->get($field)->format("Y-m-d H:i:s");
+          }
           break;
         default: $value = $entity->get($field);
       }
