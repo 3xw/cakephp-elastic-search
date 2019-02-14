@@ -48,7 +48,7 @@ class SyncWithESBehavior extends Behavior
   {
     foreach($this->documents as $document)
     {
-      if(!$document->get('foreign_key')) $document->set('foreign_key', $entity->get($this->getConfig('primaryKey')));
+      if(!$document->get('foreign_key')) $document->set('foreign_key', $entity->get($this->getTable()->getPrimaryKey()));
       if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $valueOrCallable) $document->set($key, $this->getValueOrCallable($valueOrCallable));
       $result = $this->getIndex()->save($document);
       //if(!$result) debug($document->errors());
@@ -57,6 +57,7 @@ class SyncWithESBehavior extends Behavior
 
   public function afterDelete(Event $event, EntityInterface $entity, ArrayObject $options)
   {
+
     if(!$this->getConfig('deleteDocument')) return;
 
     // get document(s) to delete
@@ -94,6 +95,7 @@ class SyncWithESBehavior extends Behavior
     $query = $this->getIndex()->find()->queryMust(new Match($this->getConfig('primaryKey'), $entity->get($this->getTable()->getPrimaryKey())));
     if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $valueOrCallable) $query->queryMust(new Match($key, $this->getValueOrCallable($valueOrCallable)));
     if($this->getConfig('translate') && $locale) $query->queryMust(new Match($this->getConfig('translate'), $locale));
+
     return $query;
   }
 
