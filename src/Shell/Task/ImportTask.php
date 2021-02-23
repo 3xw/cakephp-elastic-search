@@ -8,6 +8,7 @@ use Cake\Network\Http\Client;
 use Cake\Datasource\ConnectionManager;
 use Cake\Core\Configure;
 use Cake\ORM\Entity;
+use Cake\Console\ConsoleOptionParser;
 
 class importTask extends ElasticeSearchConnectTask
 {

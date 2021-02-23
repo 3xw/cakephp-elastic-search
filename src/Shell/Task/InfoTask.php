@@ -3,6 +3,7 @@ namespace Trois\ElasticSearch\Shell\Task;
 
 use Cake\Utility\Inflector;
 use Cake\Network\Http\Client;
+use Cake\Console\ConsoleOptionParser;
 
 class InfoTask extends ElasticeSearchConnectTask
 {

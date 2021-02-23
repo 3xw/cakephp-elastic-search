@@ -3,6 +3,7 @@ namespace Trois\ElasticSearch\Shell\Task;
 
 use Cake\Datasource\ConnectionManager;
 use Cake\Console\Shell;
+use Cake\Console\ConsoleOptionParser;
 
 class ElasticeSearchConnectTask extends Shell
 {
@@ -10,7 +11,7 @@ class ElasticeSearchConnectTask extends Shell
 
   public $connection = null;
 
-  public function getOptionParser()
+  public function getOptionParser(): ConsoleOptionParser
   {
     $parser = parent::getOptionParser()
     ->addOptions([
@@ -20,13 +21,13 @@ class ElasticeSearchConnectTask extends Shell
     return $parser;
   }
 
-  public function initialize()
+  public function initialize(): void
   {
     parent::initialize();
     $this->connections = ConnectionManager::configured();
   }
 
-  public function startup()
+  public function startup(): void
   {
     if(empty($this->params['connection'])) $this->setConnection();
     else $this->testConnection();
