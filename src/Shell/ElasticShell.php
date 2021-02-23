@@ -2,12 +2,13 @@
 namespace Trois\ElasticSearch\Shell;
 
 use Cake\Console\Shell;
+use Cake\Console\ConsoleOptionParser;
 
 class ElasticShell extends Shell
 {
   public $tasks = ['Trois/ElasticSearch.Delete','Trois/ElasticSearch.Create','Trois/ElasticSearch.Info','Trois/ElasticSearch.Import'];
 
-  public function getOptionParser()
+  public function getOptionParser(): ConsoleOptionParser
   {
     $parser = parent::getOptionParser()
     ->addSubcommand('delete', [
