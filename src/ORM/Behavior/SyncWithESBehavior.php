@@ -49,7 +49,7 @@ class SyncWithESBehavior extends Behavior
     foreach($this->documents as $document)
     {
       if(!$document->get('foreign_key')) $document->set('foreign_key', $entity->get($this->getTable()->getPrimaryKey()));
-      if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $valueOrCallable) $document->set($key, $this->getValueOrCallable($valueOrCallable));
+      if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $valueOrCallable) $document->set($key, $this->getValueOrCallable($valueOrCallable, $entity));
       $result = $this->getIndex()->save($document);
       //if(!$result) debug($document->errors());
     }
@@ -87,13 +87,13 @@ class SyncWithESBehavior extends Behavior
 
   public function newDocument($entity, $locale = null)
   {
-    return $this->getIndex()->patchEntity($this->getIndex()->newEntity(), $this->newData($entity, $locale));
+    return $this->getIndex()->patchEntity($this->getIndex()->newEmptyEntity(), $this->newData($entity, $locale));
   }
 
   public function buildQuery($entity, $locale = null)
   {
     $query = $this->getIndex()->find()->queryMust(new Match($this->getConfig('primaryKey'), $entity->get($this->getTable()->getPrimaryKey())));
-    if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $valueOrCallable) $query->queryMust(new Match($key, $this->getValueOrCallable($valueOrCallable)));
+    if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $valueOrCallable) $query->queryMust(new Match($key, $this->getValueOrCallable($valueOrCallable, $entity)));
     if($this->getConfig('translate') && $locale) $query->queryMust(new Match($this->getConfig('translate'), $locale));
 
     return $query;
@@ -135,14 +135,14 @@ class SyncWithESBehavior extends Behavior
         foreach($fields as $field) $data[$prop] .= $entity->get($field).$this->getConfig('separator');
         $data[$prop] = substr($data[$prop], 0, strlen($data[$prop]) - strlen($this->getConfig('separator')));
       }else if($fields instanceof CompletionConstructor) $data[$prop] = $fields->newProperty($entity, $this->getConfig('separator'));
-      else $data[$prop] = $this->getValueOrCallable($fields);
+      else $data[$prop] = $this->getValueOrCallable($fields, $entity);
     }
     return $data;
   }
 
-  protected function getValueOrCallable($value)
+  protected function getValueOrCallable($value, EntityInterface $entity)
   {
-    if(is_callable($value)) return call_user_func($value);
+    if(is_callable($value)) return call_user_func($value, $entity);
     else return $value;
   }
 }
