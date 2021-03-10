@@ -1,6 +1,8 @@
 <?php
 namespace Trois\ElasticSearch\ORM\Behavior;
 
+use ArrayObject;
+
 use Cake\ORM\Behavior;
 use Cake\ORM\Table;
 use Cake\Event\Event;
@@ -8,9 +10,11 @@ use Cake\ElasticSearch\IndexRegistry;
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\Entity;
 use Cake\Core\Configure;
+
 use Elastica\Query\Match;
-use ArrayObject;
+
 use Trois\ElasticSearch\ORM\CompletionConstructor;
+use Trois\ElasticSearch\ORM\AssociationsConstructor;
 
 class SyncWithESBehavior extends Behavior
 {
@@ -134,7 +138,11 @@ class SyncWithESBehavior extends Behavior
         $data[$prop] = '';
         foreach($fields as $field) $data[$prop] .= $entity->get($field).$this->getConfig('separator');
         $data[$prop] = substr($data[$prop], 0, strlen($data[$prop]) - strlen($this->getConfig('separator')));
-      }else if($fields instanceof CompletionConstructor) $data[$prop] = $fields->newProperty($entity, $this->getConfig('separator'));
+      }
+      else if(
+        $fields instanceof CompletionConstructor ||
+        $fields instanceof AssociationsConstructor
+      ) $data[$prop] = $fields->newProperty($entity, $this->getConfig('separator'));
       else $data[$prop] = $this->getValueOrCallable($fields, $entity);
     }
     return $data;
