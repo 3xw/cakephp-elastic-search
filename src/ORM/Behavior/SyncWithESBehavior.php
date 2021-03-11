@@ -36,7 +36,7 @@ class SyncWithESBehavior extends Behavior
 
   protected $_clonedEntity = null;
 
-  public function beforeSave(Event $event, EntityInterface $entity, ArrayObject $options)
+  public function afterSave(Event $event, EntityInterface $entity, ArrayObject $options)
   {
     if($this->getConfig('translate'))
     {
@@ -46,16 +46,12 @@ class SyncWithESBehavior extends Behavior
       foreach(Configure::read('I18n.languages') as $locale) $this->documents[] = $this->patchDocument($entity, $locale);
     }
     else $this->documents[] = $this->patchDocument($entity);
-  }
 
-  public function afterSave(Event $event, EntityInterface $entity, ArrayObject $options)
-  {
     foreach($this->documents as $document)
     {
       if(!$document->get('foreign_key')) $document->set('foreign_key', $entity->get($this->getTable()->getPrimaryKey()));
       if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $valueOrCallable) $document->set($key, $this->getValueOrCallable($valueOrCallable, $entity));
       $result = $this->getIndex()->save($document);
-      //if(!$result) debug($document->errors());
     }
   }
 
