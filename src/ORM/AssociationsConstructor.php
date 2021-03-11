@@ -26,16 +26,16 @@ class AssociationsConstructor
 
     foreach($this->associations as $assoc => $fields)
     {
-      $entityArray = (new ArrayObject(
-        $source->find()
-        ->contain($this->assoToContain($assoc))
-        ->where(["$alias.$pKey" => $entity->get($pKey)])
-        ->first()
-      ))
-      ->toArray();
+      if(!$e = $source->find()
+      ->contain($this->assoToContain($assoc))
+      ->where(["$alias.$pKey" => $entity->get($pKey)])
+      ->first()) continue;
 
+      $entityArray = (new ArrayObject())->getArray($e->toArray());
       list($property, $table) = $this->assoToDotPropertyAndTable($assoc, $source);
-      $ae = (object) Hash::get($entityArray, $property);
+
+      if(!$ae = Hash::get($entityArray, $property)) continue;
+      $ae = (object) $ae;
 
       $obj = [
         'model' => $table->getAlias(),
@@ -46,11 +46,9 @@ class AssociationsConstructor
         if(is_callable($prop)) $obj[$field] = $this->getValueOrCallable($prop, $entity);
         else $obj[$field] = $ae->{$prop};
       }
-      
+
       $properties[] = $obj;
     }
-
-    $entity->get($field);
 
     return $properties;
   }
