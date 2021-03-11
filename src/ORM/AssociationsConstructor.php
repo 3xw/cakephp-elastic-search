@@ -31,26 +31,29 @@ class AssociationsConstructor
       ->where(["$alias.$pKey" => $entity->get($pKey)])
       ->first()) continue;
 
-      $entityArray = (new ArrayObject())->getArray($e->toArray());
+      $ea = (new ArrayObject())->getArray($e->toArray());
       list($property, $table) = $this->assoToDotPropertyAndTable($assoc, $source);
+      if(!$relation = Hash::get($ea, $property)) continue;
 
-      if(!$ae = Hash::get($entityArray, $property)) continue;
-      $ae = (object) $ae;
-
-      $obj = [
-        'model' => $table->getAlias(),
-        'foreign_key' => $ae->{$table->getPrimaryKey()}
-      ];
-      foreach($fields as $field => $prop)
-      {
-        if(is_callable($prop)) $obj[$field] = $this->getValueOrCallable($prop, $entity);
-        else $obj[$field] = $ae->{$prop};
-      }
-
-      $properties[] = $obj;
+      if(is_int(array_keys($relation)[0])) foreach ($relation as $rel) $properties[] = $this->createRelation($entity, $fields, $rel, $table);
+      else $properties[] = $this->createRelation($entity, $fileds, $relation, $table);
     }
-
     return $properties;
+  }
+
+  public function createRelation($entity, $fields, $related, $source)
+  {
+    $e = (object) $related;
+    $obj = [
+      'model' => $source->getAlias(),
+      'foreign_key' => $e->{$source->getPrimaryKey()}
+    ];
+    foreach($fields as $field => $prop)
+    {
+      if(is_callable($prop)) $obj[$field] = $this->getValueOrCallable($prop, $entity, $e);
+      else $obj[$field] = $e->{$prop};
+    }
+    return $obj;
   }
 
   public function assoToDotPropertyAndTable($assoc, $source)
@@ -58,12 +61,13 @@ class AssociationsConstructor
     $assocs = explode('.', $assoc);
     $property = '';
     $pointer = $source;
+    $table = null;
     foreach ($assocs as $name)
     {
-      $property .= $pointer->getAssociation('Attachments')->getProperty();
+      $property .= $pointer->getAssociation($name)->getProperty();
       $pointer = $pointer->{$name};
     }
-    return [$property, $pointer];
+    return [$property, $pointer->getTarget()];
   }
 
   public function assoToContain($assoc)
@@ -79,7 +83,7 @@ class AssociationsConstructor
     return $containments;
   }
 
-  protected function getValueOrCallable($value, EntityInterface $entity)
+  protected function getValueOrCallable($value, EntityInterface $entity, array $related)
   {
     if(is_callable($value)) return call_user_func($value, $entity);
     else return $value;
