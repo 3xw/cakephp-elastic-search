@@ -15,6 +15,7 @@ use Elastica\Query\Match;
 
 use Trois\ElasticSearch\ORM\CompletionConstructor;
 use Trois\ElasticSearch\ORM\AssociationsConstructor;
+use Trois\ElasticSearch\Utility\CakeORM;
 
 class SyncWithESBehavior extends Behavior
 {
@@ -38,6 +39,11 @@ class SyncWithESBehavior extends Behavior
 
   public function afterSave(Event $event, EntityInterface $entity, ArrayObject $options)
   {
+    $this->saveOrUpadteES($entity);
+  }
+
+  public function saveOrUpadteES(EntityInterface $entity)
+  {
     if($this->getConfig('translate'))
     {
       $lng = Configure::read('I18n.languages');
@@ -50,7 +56,7 @@ class SyncWithESBehavior extends Behavior
     foreach($this->documents as $document)
     {
       if(!$document->get('foreign_key')) $document->set('foreign_key', $entity->get($this->getTable()->getPrimaryKey()));
-      if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $valueOrCallable) $document->set($key, $this->getValueOrCallable($valueOrCallable, $entity));
+      if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $valueOrCallable) $document->set($key, CakeORM::getValueOrCallable($valueOrCallable, $entity));
       $result = $this->getIndex()->save($document);
     }
   }
@@ -93,7 +99,7 @@ class SyncWithESBehavior extends Behavior
   public function buildQuery($entity, $locale = null)
   {
     $query = $this->getIndex()->find()->queryMust(new Match($this->getConfig('primaryKey'), $entity->get($this->getTable()->getPrimaryKey())));
-    if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $valueOrCallable) $query->queryMust(new Match($key, $this->getValueOrCallable($valueOrCallable, $entity)));
+    if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $valueOrCallable) $query->queryMust(new Match($key, CakeORM::getValueOrCallable($valueOrCallable, $entity)));
     if($this->getConfig('translate') && $locale) $query->queryMust(new Match($this->getConfig('translate'), $locale));
 
     return $query;
@@ -139,14 +145,8 @@ class SyncWithESBehavior extends Behavior
         $fields instanceof CompletionConstructor ||
         $fields instanceof AssociationsConstructor
       ) $data[$prop] = $fields->newProperty($entity, $this->getConfig('separator'));
-      else $data[$prop] = $this->getValueOrCallable($fields, $entity);
+      else $data[$prop] = CakeORM::getValueOrCallable($fields, $entity);
     }
     return $data;
-  }
-
-  protected function getValueOrCallable($value, EntityInterface $entity)
-  {
-    if(is_callable($value)) return call_user_func($value, $entity);
-    else return $value;
   }
 }

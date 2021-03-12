@@ -7,6 +7,8 @@ use Cake\ORM\Behavior;
 use Cake\Event\Event;
 use Cake\Datasource\EntityInterface;
 
+use Trois\ElasticSearch\Utility\CakeORM;
+
 class SyncRelatedWithESBehavior extends Behavior
 {
   protected $_defaultConfig = [
@@ -15,33 +17,48 @@ class SyncRelatedWithESBehavior extends Behavior
 
   public function afterSave(Event $event, EntityInterface $entity, ArrayObject $options)
   {
-    if(empty($this->getConfig('related'))) return;
+    if(!$related = $this->getConfig('related')) return;
+
+    $dotAssos = [];
+    foreach ($related as $dotAsso => $fields)
+    {
+      foreach($fields as $field)
+      {
+        if(array_key_exists($dotAsso, $dotAssos)) continue;
+        /*if($entity->hasChanged($field))*/ $dotAssos[$dotAsso] = $fields;
+      }
+    }
+
+    $this->warnRelations($entity, $dotAssos);
   }
 
-  public function assoToDotPropertyAndTable($assoc, $source)
+  public function warnRelations($entity, $dotAssos)
   {
-    $assocs = explode('.', $assoc);
-    $property = '';
-    $pointer = $source;
-    $table = null;
-    foreach ($assocs as $name)
-    {
-      $property .= $pointer->getAssociation($name)->getProperty();
-      $pointer = $pointer->{$name};
-    }
-    return [$property, $pointer->getTarget()];
+    $contain = CakeORM::dotAssosToContain(array_keys($dotAssos));
+    $alias = $this->getTable()->getAlias();
+    $pKey = $this->getTable()->getPrimaryKey();
+
+    debug($this->getTable()->find()
+    ->contain($contain)
+    ->where(["$alias.$pKey" => $entity->get($pKey)]));
+
+    if(!$e = $this->getTable()->find()
+    ->contain($contain)
+    ->where(["$alias.$pKey" => $entity->get($pKey)])
+    ->first()) return;
+
+    foreach ($dotAssos as $dotAsso => $fields) $this->warnRelation($e, $dotAsso, $fields);
   }
 
-  public function assoToContain($assoc)
+  public function warnRelation($entity, $dotAsso, $fields)
   {
-    $assocs = explode('.', $assoc);
-    $containments = [];
-    $pointer = &$containments;
-    foreach ($assocs as $name)
-    {
-      $pointer[$name] = [];
-      $pointer = &$pointer[$name];
-    }
-    return $containments;
+    $property = CakeORM::dotAssoToDotProperty($dotAsso, $this->getTable());
+    $table = CakeORM::dotAssoToLastTable($dotAsso, $this->getTable());
+    $dirtyField = $table->getDisplayField();
+
+    if(!$relation = CakeORM::extractRelationFromDotProperty($entity, $property)) return;
+
+    if(is_array($relation)) foreach ($relation as $rel) $table->saveOrUpadteES($rel);
+    else $table->saveOrUpadteES($relation);
   }
 }
