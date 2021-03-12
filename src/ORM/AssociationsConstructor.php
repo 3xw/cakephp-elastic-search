@@ -36,7 +36,7 @@ class AssociationsConstructor
       if(!$relation = CakeORM::extractRelationFromDotProperty($e, $property)) continue;
 
       if(is_array($relation)) foreach ($relation as $rel) $properties[] = $this->createRelation($entity, $fields, $rel, $table);
-      else $properties[] = $this->createRelation($entity, $fileds, $relation, $table);
+      else $properties[] = $this->createRelation($entity, $fields, $relation, $table);
     }
     return $properties;
   }

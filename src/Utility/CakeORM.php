@@ -82,7 +82,7 @@ class CakeORM
 
   public static function getValueOrCallable($value, ...$args)
   {
-    if(is_callable($value)) return call_user_func($value, $args);
+    if(is_callable($value)) return call_user_func_array($value, $args);
     else return $value;
   }
 }

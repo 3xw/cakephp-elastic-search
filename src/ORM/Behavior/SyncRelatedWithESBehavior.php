@@ -38,10 +38,6 @@ class SyncRelatedWithESBehavior extends Behavior
     $alias = $this->getTable()->getAlias();
     $pKey = $this->getTable()->getPrimaryKey();
 
-    debug($this->getTable()->find()
-    ->contain($contain)
-    ->where(["$alias.$pKey" => $entity->get($pKey)]));
-
     if(!$e = $this->getTable()->find()
     ->contain($contain)
     ->where(["$alias.$pKey" => $entity->get($pKey)])
