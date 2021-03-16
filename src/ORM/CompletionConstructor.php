@@ -28,7 +28,7 @@ class CompletionConstructor {
       foreach($this->input as $field) $input .= $entity->get($field).$separator;
       $input = substr($input, 0, strlen($input) - strlen($separator));
     }
-    else $input = CakeORM::getValueOrCallable($this->input, $entity);
+    else $input = $this->getValueOrCallable($this->input, $entity);
 
     $property['input'] = $input;
 
@@ -43,11 +43,17 @@ class CompletionConstructor {
           $contexts[$ctx] = [];
           foreach($value as $field) $contexts[$ctx][] = $entity->get($field);
         }
-        else $contexts[$ctx] = CakeORM::getValueOrCallable($value, $entity);
+        else $contexts[$ctx] = $this->getValueOrCallable($value, $entity);
       }
       $property['contexts'] = $contexts;
     }
 
     return $property;
+  }
+
+  public function getValueOrCallable($value, ...$args)
+  {
+    if(is_callable($value)) return call_user_func_array($value, $args);
+    else return $value;
   }
 }

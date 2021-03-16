@@ -2,7 +2,7 @@
 namespace Trois\ElasticSearch\Utility;
 
 use Cake\Utility\Hash;
-
+use Cake\Datasource\EntityInterface;
 
 class CakeORM
 {
@@ -83,6 +83,7 @@ class CakeORM
   public static function getValueOrCallable($value, ...$args)
   {
     if(is_callable($value)) return call_user_func_array($value, $args);
+    else if(!empty($args) && is_subclass_of($args[0], 'Cake\Datasource\EntityInterface')) return $args[0]->{$value};
     else return $value;
   }
 }

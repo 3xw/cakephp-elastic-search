@@ -56,7 +56,7 @@ class SyncWithESBehavior extends Behavior
     foreach($this->documents as $document)
     {
       if(!$document->get('foreign_key')) $document->set('foreign_key', $entity->get($this->getTable()->getPrimaryKey()));
-      if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $valueOrCallable) $document->set($key, CakeORM::getValueOrCallable($valueOrCallable, $entity));
+      if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $value) $document->set($key, $value);
       $result = $this->getIndex()->save($document);
     }
   }
@@ -99,7 +99,7 @@ class SyncWithESBehavior extends Behavior
   public function buildQuery($entity, $locale = null)
   {
     $query = $this->getIndex()->find()->queryMust(new Match($this->getConfig('primaryKey'), $entity->get($this->getTable()->getPrimaryKey())));
-    if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $valueOrCallable) $query->queryMust(new Match($key, CakeORM::getValueOrCallable($valueOrCallable, $entity)));
+    if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $value) $query->queryMust(new Match($key, $value));
     if($this->getConfig('translate') && $locale) $query->queryMust(new Match($this->getConfig('translate'), $locale));
 
     return $query;
