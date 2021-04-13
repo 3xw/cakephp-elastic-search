@@ -1,8 +1,7 @@
 <?
 namespace Trois\ElasticSearch\Model\Index;
 
-use Cake\ElasticSearch\Index;
-use Cake\Utility\Text;
+use Trois\ElasticSearch\ORM\Index;
 
 class ItemsIndex extends Index
 {
