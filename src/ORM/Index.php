@@ -27,26 +27,44 @@ class Index extends BaseIndex
     if(Hash::check($options, 'query.filter')) $query->where($this->getFilter(null, Hash::get($options, 'query.filter')));
 
     // nested
-    if(Hash::check($options, 'query.nested')) $query->queryMust($this->getNested(Hash::get($options, 'query.nested')));
+    if(Hash::check($options, 'query.nested')) $this->getNested($query, Hash::get($options, 'query.nested'));
+
     // query
     if(Hash::check($options, 'query.query')) $query->queryMust($this->getFilter(null, Hash::get($options, 'query.query')));
+
+    //debug($query->compileQuery());
+    //die();
 
     return $query;
   }
 
-  public function getNested($nested = [])
+  public function getNested(Query $query, $nested = [])
   {
     // check
-    $toCheck = ['path','query.filter'];
+    $toCheck = ['path','query.filter','query.operator'];
     foreach($toCheck as $check) if(!Hash::check($nested, $check)) throw new \Exception('Nested needs a '.$check);
 
     // args
     $path = Hash::get($nested, 'path');
     $filter = Hash::get($nested, 'query.filter');
+    $operator = Hash::get($nested, 'query.operator');
     $builder = new QueryBuilder();
+    $builder = $builder->nested($path, $this->getFilter($builder, $filter));
 
     // query
-    return $builder->nested($path, $this->getFilter($builder, $filter));
+    switch($operator)
+    {
+      case 'and':
+      $query->queryMust($builder);
+      break;
+
+      case 'or':
+      $query->queryShould($builder);
+      break;
+
+      default:
+      throw new \Exception('Nested: this operator "'.$operator.'" is unhadeled');
+    }
   }
 
   public function getFilter(QueryBuilder $builder = null, $filter = [])
