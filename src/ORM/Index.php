@@ -34,18 +34,20 @@ class Index extends BaseIndex
     if(Hash::check($options, 'query.filter')) $query->where($this->getFilter(null, Hash::get($options, 'query.filter')));
 
     // nested
-    if(Hash::check($options, 'query.nested')) $this->getNested($query, Hash::get($options, 'query.nested'));
+    if(Hash::check($options, 'query.nested')) $query->queryMust($this->getNested(Hash::get($options, 'query.nested')));
+    // query
+    if(Hash::check($options, 'query.query')) $query->queryMust($this->getFilter(null, Hash::get($options, 'query.query')));
 
     /*
-    debug($query->compileQuery());
+    debug($query);
     debug(json_encode($query->compileQuery()->toArray()));
     die();
     */
-
+    
     return $query;
   }
 
-  public function getNested(CustomQuery $query, $nested = [])
+  public function getNested($nested = [])
   {
     // check
     $toCheck = ['path','query.filter'];
@@ -57,7 +59,7 @@ class Index extends BaseIndex
     $builder = new QueryBuilder();
 
     // query
-    $query->queryMust($builder->nested($path, $this->getFilter($builder, $filter)) );
+    return $builder->nested($path, $this->getFilter($builder, $filter));
   }
 
   public function getFilter(QueryBuilder $builder = null, $filter = [])
