@@ -12,11 +12,6 @@ use Trois\ElasticSearch\ORM\Query as CustomQuery;
 
 class Index extends BaseIndex
 {
-  public function query()
-  {
-    return new CustomQuery($this);
-  }
-
   public function isDev()
   {
     $dev = true;
@@ -28,8 +23,6 @@ class Index extends BaseIndex
 
   public function findSearch(Query $query, array $options)
   {
-    //debug($options);
-
     // filters
     if(Hash::check($options, 'query.filter')) $query->where($this->getFilter(null, Hash::get($options, 'query.filter')));
 
@@ -38,12 +31,6 @@ class Index extends BaseIndex
     // query
     if(Hash::check($options, 'query.query')) $query->queryMust($this->getFilter(null, Hash::get($options, 'query.query')));
 
-    /*
-    debug($query);
-    debug(json_encode($query->compileQuery()->toArray()));
-    die();
-    */
-    
     return $query;
   }
 
