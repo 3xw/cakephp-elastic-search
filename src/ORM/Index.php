@@ -24,13 +24,13 @@ class Index extends BaseIndex
   public function findSearch(Query $query, array $options)
   {
     // filters
-    if(Hash::check($options, 'query.filter')) $query->where($this->getFilter(null, Hash::get($options, 'query.filter')));
+    if(Hash::check($options, 'query.filter')) $query->where($this->getFilter(new QueryBuilder(), Hash::get($options, 'query.filter')));
 
     // nested
     if(Hash::check($options, 'query.nested')) $this->getNested($query, Hash::get($options, 'query.nested'));
 
     // query
-    if(Hash::check($options, 'query.query')) $query->queryMust($this->getFilter(null, Hash::get($options, 'query.query')));
+    if(Hash::check($options, 'query.query')) $query->queryMust($this->getFilter(new QueryBuilder(), Hash::get($options, 'query.query')));
 
     //debug($query->compileQuery());
     //die();
