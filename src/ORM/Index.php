@@ -2,6 +2,7 @@
 namespace Trois\ElasticSearch\ORM;
 
 use Elastica\Query\AbstractQuery;
+use Elastica\Query\MultiMatch;
 
 use Cake\Utility\Hash;
 use Cake\ElasticSearch\Query;
@@ -40,6 +41,14 @@ class Index extends BaseIndex
 
   public function getNested(Query $query, $nested = [])
   {
+    // nested.nested
+    if(Hash::check($nested, 'nested'))
+    {
+      if(!is_array(Hash::get($nested, 'nested'))) throw new \Exception('nested.nested must be an array');
+      foreach(Hash::get($nested, 'nested') as $n) $this->getNested($query, $n);
+      return;
+    }
+
     // check
     $toCheck = ['path','query.filter','query.operator'];
     foreach($toCheck as $check) if(!Hash::check($nested, $check)) throw new \Exception('Nested needs a '.$check);
@@ -76,15 +85,18 @@ class Index extends BaseIndex
     // operator
     $operator = Hash::get($filter, 'operator');
 
-    switch(true)
+    if(Hash::check($filter, 'filters'))
     {
-      case Hash::check($filter, 'filters'):
       $filters = Hash::get($filter, 'filters');
       return $this->getFilters($filters, $operator);
+    }
 
-      case Hash::check($filter, 'property') && Hash::check($filter, 'value'):
+    // value Based
+    $value = Hash::get($filter, 'value');
+
+    if( Hash::check($filter, 'property'))
+    {
       $property = Hash::get($filter, 'property');
-      $value = Hash::get($filter, 'value');
       switch($operator)
       {
         case 'term':
@@ -96,11 +108,20 @@ class Index extends BaseIndex
         default:
         throw new \Exception('Filter: this operator "'.$operator.'" is unhadeled');
       }
-      return $this->getClosure($filters, $operator);
-
-      default:
-      throw new \Exception('getFilter unhandled');
     }
+    elseif(Hash::check($filter, 'properties') && is_array(Hash::get($filter, 'properties')))
+    {
+      $properties = Hash::get($filter, 'properties');
+      switch($operator)
+      {
+        case 'match':
+        return (new MultiMatch())->setQuery($value)->setFields($properties);
+
+        default:
+        throw new \Exception('Filter: this operator "'.$operator.'" is unhadeled');
+      }
+    }
+    else throw new \Exception('getFilter unhandled');
   }
 
   public function getFilters($filters, $operator)
