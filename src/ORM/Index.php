@@ -33,10 +33,18 @@ class Index extends BaseIndex
     // query
     if(Hash::check($options, 'query.query')) $query->queryMust($this->getFilter(new QueryBuilder(), Hash::get($options, 'query.query')));
 
-    //debug($query->compileQuery());
-    //die();
+    //highlight
+    if(Hash::check($options, 'query.highlight')) $query->highlight($this->parseHighlight(Hash::get($options, 'query.highlight')));
 
     return $query;
+  }
+
+  public function parseHighlight($highlight)
+  {
+    if(!is_array($fields = Hash::get($highlight, 'fields'))) throw new \Exception('highlight.fields must be an array');
+    foreach($fields as &$field) if(is_array($field) && empty($field)) $field = new \stdClass();
+
+    return Hash::insert($highlight, 'fields', $fields);
   }
 
   public function getNested(Query $query, $nested = [])
