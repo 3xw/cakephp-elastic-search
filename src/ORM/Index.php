@@ -2,7 +2,9 @@
 namespace Trois\ElasticSearch\ORM;
 
 use Elastica\Query\AbstractQuery;
+use Elastica\Query\BoolQuery;
 use Elastica\Query\MultiMatch;
+use Elastica\Query\Range;
 
 use Cake\Utility\Hash;
 use Cake\ElasticSearch\Query;
@@ -36,6 +38,8 @@ class Index extends BaseIndex
     //highlight
     if(Hash::check($options, 'query.highlight')) $query->highlight($this->parseHighlight(Hash::get($options, 'query.highlight')));
 
+    //debug($query->compileQuery());
+    //die();
     return $query;
   }
 
@@ -96,7 +100,7 @@ class Index extends BaseIndex
     if(Hash::check($filter, 'filters'))
     {
       $filters = Hash::get($filter, 'filters');
-      return $this->getFilters($filters, $operator);
+      return $this->getFilters($builder ,$filters, $operator);
     }
 
     // value Based
@@ -112,6 +116,9 @@ class Index extends BaseIndex
 
         case 'match':
         return $builder->match($property, $value);
+
+        case 'range':
+        return (new Range())->addField($property,  $value);
 
         default:
         throw new \Exception('Filter: this operator "'.$operator.'" is unhadeled');
@@ -132,8 +139,17 @@ class Index extends BaseIndex
     else throw new \Exception('getFilter unhandled');
   }
 
-  public function getFilters($filters, $operator)
+  public function getFilters(QueryBuilder $builder = null, $filters, $operator)
   {
+    if($builder)
+    {
+      $args = [];
+      foreach($filters as $f) $args[] = $this->getFilter($builder, $f);
+
+      if($operator == 'or') return (new BoolQuery())->addShould($args);
+      if($operator == 'and') return (new BoolQuery())->addMust($args);
+    }
+
     return function($builder) use ($filters, $operator)
     {
       $args = [];
