@@ -135,14 +135,16 @@ class SyncWithESBehavior extends Behavior
         foreach($fields as $field) $data[$prop] .= $entity->get($field).$this->getConfig('separator');
         $data[$prop] = substr($data[$prop], 0, strlen($data[$prop]) - strlen($this->getConfig('separator')));
       }else if($fields instanceof CompletionConstructor) $data[$prop] = $fields->newProperty($entity, $this->getConfig('separator'));
-      else $data[$prop] = $this->getValueOrCallable($fields);
+      else $data[$prop] = $this->getValueOrCallable($fields, $entity);
     }
     return $data;
   }
 
-  protected function getValueOrCallable($value)
+  public static function getValueOrCallable($value, ...$args)
   {
-    if(is_callable($value)) return call_user_func($value);
-    else return $value;
+    if(is_callable($value)) $value = call_user_func_array($value, $args);
+    else if(!empty($args) && is_subclass_of($args[0], 'Cake\Datasource\EntityInterface')) $value = $args[0]->{$value};
+
+    return $value;
   }
 }
