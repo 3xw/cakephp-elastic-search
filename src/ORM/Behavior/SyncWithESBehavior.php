@@ -1,6 +1,8 @@
 <?php
 namespace Trois\ElasticSearch\ORM\Behavior;
 
+use ArrayObject;
+
 use Cake\ORM\Behavior;
 use Cake\ORM\Table;
 use Cake\Event\Event;
@@ -8,9 +10,12 @@ use Cake\ElasticSearch\IndexRegistry;
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\Entity;
 use Cake\Core\Configure;
+
 use Elastica\Query\Match;
-use ArrayObject;
+
 use Trois\ElasticSearch\ORM\CompletionConstructor;
+use Trois\ElasticSearch\ORM\AssociationsConstructor;
+use Trois\ElasticSearch\Utility\CakeORM;
 
 class SyncWithESBehavior extends Behavior
 {
@@ -32,7 +37,12 @@ class SyncWithESBehavior extends Behavior
 
   protected $_clonedEntity = null;
 
-  public function beforeSave(Event $event, EntityInterface $entity, ArrayObject $options)
+  public function afterSave(Event $event, EntityInterface $entity, ArrayObject $options)
+  {
+    $this->saveOrUpadteES($entity);
+  }
+
+  public function saveOrUpadteES(EntityInterface $entity)
   {
     if($this->getConfig('translate'))
     {
@@ -42,16 +52,12 @@ class SyncWithESBehavior extends Behavior
       foreach(Configure::read('I18n.languages') as $locale) $this->documents[] = $this->patchDocument($entity, $locale);
     }
     else $this->documents[] = $this->patchDocument($entity);
-  }
 
-  public function afterSave(Event $event, EntityInterface $entity, ArrayObject $options)
-  {
     foreach($this->documents as $document)
     {
       if(!$document->get('foreign_key')) $document->set('foreign_key', $entity->get($this->getTable()->getPrimaryKey()));
-      if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $valueOrCallable) $document->set($key, $this->getValueOrCallable($valueOrCallable));
+      if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $value) $document->set($key, $value);
       $result = $this->getIndex()->save($document);
-      //if(!$result) debug($document->errors());
     }
   }
 
@@ -87,13 +93,13 @@ class SyncWithESBehavior extends Behavior
 
   public function newDocument($entity, $locale = null)
   {
-    return $this->getIndex()->patchEntity($this->getIndex()->newEntity(), $this->newData($entity, $locale));
+    return $this->getIndex()->patchEntity($this->getIndex()->newEmptyEntity(), $this->newData($entity, $locale));
   }
 
   public function buildQuery($entity, $locale = null)
   {
     $query = $this->getIndex()->find()->queryMust(new Match($this->getConfig('primaryKey'), $entity->get($this->getTable()->getPrimaryKey())));
-    if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $valueOrCallable) $query->queryMust(new Match($key, $this->getValueOrCallable($valueOrCallable)));
+    if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $value) $query->queryMust(new Match($key, $value));
     if($this->getConfig('translate') && $locale) $query->queryMust(new Match($this->getConfig('translate'), $locale));
 
     return $query;
@@ -134,15 +140,13 @@ class SyncWithESBehavior extends Behavior
         $data[$prop] = '';
         foreach($fields as $field) $data[$prop] .= $entity->get($field).$this->getConfig('separator');
         $data[$prop] = substr($data[$prop], 0, strlen($data[$prop]) - strlen($this->getConfig('separator')));
-      }else if($fields instanceof CompletionConstructor) $data[$prop] = $fields->newProperty($entity, $this->getConfig('separator'));
-      else $data[$prop] = $this->getValueOrCallable($fields);
+      }
+      else if(
+        $fields instanceof CompletionConstructor ||
+        $fields instanceof AssociationsConstructor
+      ) $data[$prop] = $fields->newProperty($entity, $this->getConfig('separator'));
+      else $data[$prop] = CakeORM::getValueOrCallable($fields, $entity);
     }
     return $data;
-  }
-
-  protected function getValueOrCallable($value)
-  {
-    if(is_callable($value)) return call_user_func($value);
-    else return $value;
   }
 }

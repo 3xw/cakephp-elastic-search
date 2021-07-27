@@ -1,6 +1,10 @@
 <?php
 namespace Trois\ElasticSearch\ORM;
 
+use Cake\Datasource\EntityInterface;
+
+use Trois\ElasticSearch\Utility\CakeORM;
+
 class CompletionConstructor {
 
   public $input;
@@ -24,7 +28,7 @@ class CompletionConstructor {
       foreach($this->input as $field) $input .= $entity->get($field).$separator;
       $input = substr($input, 0, strlen($input) - strlen($separator));
     }
-    else $input = $this->getValueOrCallable($this->input);
+    else $input = $this->getValueOrCallable($this->input, $entity);
 
     $property['input'] = $input;
 
@@ -39,7 +43,7 @@ class CompletionConstructor {
           $contexts[$ctx] = [];
           foreach($value as $field) $contexts[$ctx][] = $entity->get($field);
         }
-        else $contexts[$ctx] = $this->getValueOrCallable($value);
+        else $contexts[$ctx] = $this->getValueOrCallable($value, $entity);
       }
       $property['contexts'] = $contexts;
     }
@@ -47,10 +51,9 @@ class CompletionConstructor {
     return $property;
   }
 
-  public function getValueOrCallable($value)
+  public function getValueOrCallable($value, ...$args)
   {
-    if(is_callable($value)) return call_user_func($value);
+    if(is_callable($value)) return call_user_func_array($value, $args);
     else return $value;
   }
-
 }

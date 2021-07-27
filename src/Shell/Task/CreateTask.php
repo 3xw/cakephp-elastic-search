@@ -4,12 +4,13 @@ namespace Trois\ElasticSearch\Shell\Task;
 use Cake\Utility\Inflector;
 use Cake\Filesystem\File;
 use Cake\Network\Http\Client;
+use Cake\Console\ConsoleOptionParser;
 
 class CreateTask extends ElasticeSearchConnectTask
 {
   public $client = null;
 
-  public function getOptionParser()
+  public function getOptionParser(): ConsoleOptionParser
   {
     $parser = parent::getOptionParser()
     ->addOptions([

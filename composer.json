@@ -3,9 +3,9 @@
   "description": "CakePHP pages plugins",
   "type": "cakephp-plugin",
   "require": {
-    "php": ">=5.5.9",
-    "cakephp/cakephp": "^3.5",
-    "cakephp/elastic-search": "^2.0-RC2"
+    "php": ">=7.2",
+    "cakephp/cakephp": "^4.0",
+    "cakephp/elastic-search": "^3.2"
   },
   "require-dev": {
     "phpunit/phpunit": "*"
@@ -20,5 +20,6 @@
       "Trois\\ElasticSearch\\Test\\": "tests",
       "Cake\\Test\\": "./vendor/cakephp/cakephp/tests"
     }
-  }
+  },
+  "minimum-stability": "dev"
 }
