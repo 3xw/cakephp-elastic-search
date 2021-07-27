@@ -113,7 +113,7 @@ class SyncWithESBehavior extends Behavior
     }
 
     // if transaltion document then create from original one...
-    $entity = $this->getTable()->patchEntity($this->_clonedEntity, $entity->get('_translations')[$locale]->toArray());
+    if($entity->get('_translations')) $entity = $this->getTable()->patchEntity($this->_clonedEntity, $entity->get('_translations')[$locale]->toArray());
     return $this->_newData($entity, $locale);
   }
 
