@@ -11,7 +11,7 @@ use Cake\Datasource\EntityInterface;
 use Cake\ORM\Entity;
 use Cake\Core\Configure;
 
-use Elastica\Query\Match;
+use Elastica\Query\Match as ElasticaMatch;
 
 use Trois\ElasticSearch\ORM\CompletionConstructor;
 use Trois\ElasticSearch\ORM\AssociationsConstructor;
@@ -48,7 +48,8 @@ class SyncWithESBehavior extends Behavior
     {
       $lng = Configure::read('I18n.languages');
       if(!is_array($lng)) throw new \Exception("I18n.languages should be an array!", 1);
-      if(array_shift($lng) !=  Configure::read('App.defaultLocale')) throw new \Exception("First item of I18n.languages should equal to App.defaultLocale", 1);
+      $lngCopy = $lng;
+      if(array_shift($lngCopy) !=  Configure::read('App.defaultLocale')) throw new \Exception("First item of I18n.languages should equal to App.defaultLocale", 1);
       foreach(Configure::read('I18n.languages') as $locale) $this->documents[] = $this->patchDocument($entity, $locale);
     }
     else $this->documents[] = $this->patchDocument($entity);
@@ -98,9 +99,9 @@ class SyncWithESBehavior extends Behavior
 
   public function buildQuery($entity, $locale = null)
   {
-    $query = $this->getIndex()->find()->queryMust(new Match($this->getConfig('primaryKey'), $entity->get($this->getTable()->getPrimaryKey())));
-    if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $value) $query->queryMust(new Match($key, $value));
-    if($this->getConfig('translate') && $locale) $query->queryMust(new Match($this->getConfig('translate'), $locale));
+    $query = $this->getIndex()->find()->queryMust(new ElasticaMatch($this->getConfig('primaryKey'), $entity->get($this->getTable()->getPrimaryKey())));
+    if($this->getConfig('staticMatching')) foreach($this->getConfig('staticMatching') as $key => $value) $query->queryMust(new ElasticaMatch($key, $value));
+    if($this->getConfig('translate') && $locale) $query->queryMust(new ElasticaMatch($this->getConfig('translate'), $locale));
 
     return $query;
   }

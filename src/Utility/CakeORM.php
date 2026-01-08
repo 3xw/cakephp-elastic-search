@@ -33,8 +33,9 @@ class CakeORM
 
   public function isEntityArray($ea)
   {
-    if(empty($ea)) return false;
-    if(is_int(array_keys($ea)[0])) return false;
+    if(empty($ea) || !is_array($ea)) return false;
+    $keys = array_keys($ea);
+    if(empty($keys) || is_int($keys[0])) return false;
     return true;
   }
 
