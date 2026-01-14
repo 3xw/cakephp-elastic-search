@@ -19,7 +19,7 @@ use Trois\ElasticSearch\Utility\CakeORM;
 
 class SyncWithESBehavior extends Behavior
 {
-  protected $_defaultConfig = [
+  protected array $_defaultConfig = [
     'index' => 'Trois\ElasticSearch\Model\Index\ItemsIndex',
     'primaryKey' => 'foreign_key', // string or callable
     'translate' => false, // property name if yes ex: locale

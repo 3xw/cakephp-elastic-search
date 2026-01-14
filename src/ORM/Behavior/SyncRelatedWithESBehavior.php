@@ -11,7 +11,7 @@ use Trois\ElasticSearch\Utility\CakeORM;
 
 class SyncRelatedWithESBehavior extends Behavior
 {
-  protected $_defaultConfig = [
+  protected array $_defaultConfig = [
     'related' => []
   ];
 

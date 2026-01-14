@@ -9,7 +9,7 @@ use Cake\Http\Client;
 
 class ESComponent extends Component
 {
-  protected $_defaultConfig = [
+  protected array $_defaultConfig = [
     'connection' => 'elastic',
     'host' => null,
     'port' => null,
